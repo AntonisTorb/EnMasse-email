@@ -1,0 +1,7 @@
+*.exe
+/env
+/templates
+*.xls*
+__pycache__
+*.html*
+/templates
