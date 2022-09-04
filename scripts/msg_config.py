@@ -1,10 +1,13 @@
-import PySimpleGUI as sg
+import PySimpleGUI as sg # pip install PySimpleGUI
 import tkinter as tk
 from pathlib import Path
-import pandas as pd
+import pandas as pd # pip install pandas openpyxl xlrd
 import re
+from scripts.global_constants import REG
 
-def get_msg_config_layout():
+def get_msg_config_layout() ->list[list[sg.Element]]:
+    '''Returns the layout to use for the message configuration tab'''
+
     template_layout = [
         [sg.T("Choose template:"), sg.I(key = "-TEMPLATE_PATH-", expand_x=True, disabled= True), sg.B("Browse", key= "-BROWSE_TEMPLATE-")],
     ]
@@ -14,6 +17,7 @@ def get_msg_config_layout():
     ]
     subject_layout = [
         [sg.Radio("Enter one subject for all messages:", group_id= "get_subject", default= True, key= "-SUBJECT_ALL-"), sg.I(expand_x= True, key= "-SUBJECT-")],
+        [sg.Checkbox("Include the subject in Placeholder - Data pair generation.", pad= ((50,0),(0,0)), key= "-PAIR_SUBJECT-")],
         [sg.Radio("Get subject from Data column:", group_id= "get_subject", key= "-SUBJECT_FROM_DATA-"), sg.Push(), sg.Combo([], size= (25,1),  readonly= True, disabled= True, key= "-SUBJECT_COLUMN-")]
     ]
     load_pairs_layout = [
@@ -54,93 +58,90 @@ def new_layout(placeholder_name: str, data_name: list[str]) -> list[list[sg.Elem
 def configure(event: tk.Event, canvas: tk.Canvas, frame_id: int) -> None:
     '''Allows elements in a scrollable column to extend upon window resize'''
 
-    canvas.itemconfig(frame_id, width=canvas.winfo_width())
+    canvas.itemconfig(frame_id, width=canvas.winfo_width()) 
 
-def expand_scrollable_column(win):
+def expand_scrollable_column(window: sg.Window) -> None:
     '''Allow for elements in scrollable collumn to expand on window resize'''
 
-    frame_id = win.Element('-PAIR_COLUMN-').Widget.frame_id
-    canvas = win.Element('-PAIR_COLUMN-').Widget.canvas
+    frame_id = window.Element('-PAIR_COLUMN-').Widget.frame_id
+    canvas = window.Element('-PAIR_COLUMN-').Widget.canvas
     canvas.bind("<Configure>", lambda event, canvas=canvas, frame_id=frame_id:configure(event, canvas, frame_id))
 
-def browse_template_event(window):
+def browse_template_event(window: sg.Window) -> None:
+    '''Updates the template input field with the path to the template file'''
+
     template_to_load = sg.popup_get_file('',file_types=(("HTML files", "*.html*"),("text files", "*.txt*")), no_window=True)
     if template_to_load:
         window["-TEMPLATE_PATH-"].update(Path(template_to_load)) 
 
-def browse_data_event(window):
+def browse_data_event(window: sg.Window) -> None:
+    '''Updates the data input field with the path to the data file. Also updates the excel sheet dropdown if loading excel file'''
+
     data_to_load = sg.popup_get_file('',file_types=(("Excel files", "*.xls*"),("CSV files", "*.csv*")), no_window=True)
     if data_to_load:
         data_path = Path(data_to_load)
         window.Element("-DATA_PATH-").update(data_path)
-        if data_to_load.endswith(".xls", 0, -1) or data_to_load.endswith(".xls"):
+        if data_to_load.endswith(".xls", 0, -1) or data_to_load.endswith(".xls"): #.xls or .xls* files
             with pd.ExcelFile(data_path) as excel_file:
                 sheets = excel_file.sheet_names
             window.Element("-SHEET_NAMES-").update(disabled= False, values= sheets)
 
-def load_template(values):
+def load_template(values: dict) -> str:
+    '''Returns the template file based on the template file path'''
+
     template_path = Path(values["-TEMPLATE_PATH-"])
     with open(template_path) as template_file:
         return template_file.read()
 
-def load_data(values):
+def load_data(values: dict) -> pd.DataFrame:
+    '''Returns the data dataframe based on the data file path and the excel sheet selection (if applicable)'''
+
     data_path = Path(values["-DATA_PATH-"])
     sheet_name = values["-SHEET_NAMES-"]
-    if str(data_path).endswith(".xls", 0, -1) or str(data_path).endswith(".xls"): # probably need string here instead of path
+    if str(data_path).endswith(".xls", 0, -1) or str(data_path).endswith(".xls"):
         excel_sheet =  pd.read_excel(data_path, sheet_name= sheet_name, header= 0)
-        data_columns = excel_sheet.columns.values.tolist()    
-    return excel_sheet, data_columns
+    return excel_sheet
 
+def unique_values_list(given_list: list) ->list:
+    '''Returns a list with unique values'''
 
-def generate_pairs_event(placeholders, window, values):
-    reg = r"\{(.*?)\}" # regex for: group of any characters inside curly brackets
-    
-    # removing old pairs
-    if placeholders:
+    returned_list = []
+    for item in given_list:
+        if item not in returned_list:
+            returned_list.append(item)
+    return returned_list
+
+def subject_actions(data_columns: list[str], values: dict, window: sg.Window) -> str:
+    '''Performs action based on the type of subject selected by the user and returns the subject if subject for all is selected, else returns an empty string'''
+
+    subject_all = ""
+    if "Subject" in data_columns and not values["-PAIR_SUBJECT-"]:
+        window.Element("-SUBJECT_ALL-").update(False)
+        window.Element("-SUBJECT_FROM_DATA-").update(True)
+        window.Element("-SUBJECT_COLUMN-").update("Subject")
+    elif values["-SUBJECT_ALL-"] and values["-PAIR_SUBJECT-"]: 
+        subject_all = values["-SUBJECT-"]
+        window.Element("-SUBJECT_COLUMN-").update("") 
+    else:
+        window.Element("-SUBJECT_COLUMN-").update("")
+    return subject_all
+
+def generate_pairs_event(placeholders: list[str], window:sg.Window, excel_sheet: pd.DataFrame, template_text: str, values: dict) -> list[str]:
+    '''Populates the scrollable column element with "Placeholder - Data" pairs generated from the template text and the data dataframe.'''
+
+    if placeholders: # removing old pairs from layout if any exist and resetting the placeholders list to empty
         for placeholder in placeholders:
             widget = window.Element(placeholder).Widget
             del window.AllKeysDict[placeholder]
             delete_widget(widget.master)
         placeholders = []
-    
-    # load template
-    template_text = load_template(values)
-    
-    # load data
-    excel_sheet, data_columns = load_data(values)
-
-    # enable the subject from column selection
-    window.Element("-SUBJECT_COLUMN-").update(disabled= False, values= data_columns)  
-    
-    # if there is a column named "Subject", select the appropriate option and update the data column value on the dropdown list
-    if "Subject" in data_columns: # this appears to not happen in time for the next statement, so if there are any palceholders in subject for all, they will appear in the pairs. Annoying! need to figure it out. 
-        window.Element("-SUBJECT_ALL-").update(False)
-        window.Element("-SUBJECT_FROM_DATA-").update(True)
-        window.Element("-SUBJECT_COLUMN-").update("Subject")
-    else:
-        window.Element("-SUBJECT_COLUMN-").update("") 
-    
-    # if one subject for all messages selected, try to find any placeholders in the subject text
-    if values["-SUBJECT_ALL-"]:
-        subject_all = values["-SUBJECT-"]
-    else: 
-        subject_all = ""
-    
-    # combine the lists of placeholders from subject and from template
-    temporary_placeholders = re.findall(reg, subject_all) + re.findall(reg, template_text)
-
-    # only keep unique placeholder values
-    for placeholder in temporary_placeholders:
-        if placeholder in placeholders:
-            continue
-        else:
-            placeholders.append(placeholder)
-    
-    # show the pairs of placeholders and data by extending the scrollable column at the end of the window
-    if placeholders:
+    data_columns = excel_sheet.columns.values.tolist() # determine list of columns from dataframe  
+    window.Element("-SUBJECT_COLUMN-").update(disabled= False, values= data_columns) # enable the subject from column selection and add the column names as dropdown list values
+    subject_all = subject_actions(data_columns, values, window) # determine what subject to use and, if one subject for all, determine if it has placeholders and return them 
+    temporary_placeholders = re.findall(REG, subject_all) + re.findall(REG, template_text) # combine the lists of placeholders from subject and from template
+    placeholders = unique_values_list(temporary_placeholders) # only keep unique placeholder values
+    if placeholders: # extend the layout of the scrollable column with the "Placeholder - Data" pairs
         for placeholder in placeholders:
             window.extend_layout(window['-PAIR_COLUMN-'], new_layout(placeholder, data_columns))
-        window['-PAIR_COLUMN-'].contents_changed() # does not work for some reason, calling after event handling    
-
-    return template_text, excel_sheet, placeholders
-
+        #window['-PAIR_COLUMN-'].contents_changed() # appears to not have any effect on the scrollable column, calling after event handling
+    return placeholders
