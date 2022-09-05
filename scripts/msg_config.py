@@ -9,19 +9,19 @@ def get_msg_config_layout() ->list[list[sg.Element]]:
     '''Returns the layout to use for the message configuration tab'''
 
     template_layout = [
-        [sg.T("Choose template:"), sg.I(key = "-TEMPLATE_PATH-", expand_x=True, disabled= True), sg.B("Browse", key= "-BROWSE_TEMPLATE-")],
+        [sg.Text("Choose template:"), sg.Input(key = "-TEMPLATE_PATH-", expand_x=True, disabled= True), sg.B("Browse", key= "-BROWSE_TEMPLATE-")],
     ]
     data_layout = [
-        [sg.T("Choose Data:"), sg.I(key = "-DATA_PATH-", expand_x=True, disabled= True), sg.B("Browse", key= "-BROWSE_DATA-")],
-        [sg.T("Choose Sheet if Excel file:"), sg.Push(), sg.Combo([], size= (25,1),  readonly= True, disabled= True, key= "-SHEET_NAMES-")]
+        [sg.Text("Choose Data:"), sg.Input(key = "-DATA_PATH-", expand_x=True, disabled= True), sg.B("Browse", key= "-BROWSE_DATA-")],
+        [sg.Text("Choose Sheet if Excel file:"), sg.Push(), sg.Combo([], size= (25,1),  readonly= True, disabled= True, key= "-SHEET_NAMES-")]
     ]
     subject_layout = [
         [sg.Radio("Enter one subject for all messages:", group_id= "get_subject", default= True, key= "-SUBJECT_ALL-"), sg.I(expand_x= True, key= "-SUBJECT-")],
-        [sg.Checkbox("Include the subject in Placeholder - Data pair generation.", pad= ((50,0),(0,0)), key= "-PAIR_SUBJECT-")],
+        [sg.Checkbox("Include the subject in Placeholder - Data pair generation.", tooltip = "Check this if the subject contains a placeholer.", pad= ((50,0),(0,0)), key= "-PAIR_SUBJECT-")],
         [sg.Radio("Get subject from Data column:", group_id= "get_subject", key= "-SUBJECT_FROM_DATA-"), sg.Push(), sg.Combo([], size= (25,1),  readonly= True, disabled= True, key= "-SUBJECT_COLUMN-")]
     ]
     load_pairs_layout = [
-        [sg.B("Generate Placeholder - Data pairs", key= "-GENERATE_PAIRS-")]
+        [sg.Button("Generate Placeholder - Data pairs", key= "-GENERATE_PAIRS-")]
     ]
     pair_configure_layout= [
         [sg.Column(layout= [[]], expand_x= True, expand_y= True, scrollable= True, vertical_scroll_only= True, key= "-PAIR_COLUMN-")],
@@ -50,8 +50,8 @@ def new_layout(placeholder_name: str, data_name: list[str]) -> list[list[sg.Elem
 
     return [
         [sg.Frame("",[[sg.T("Placeholder: "), 
-        sg.I(placeholder_name, readonly= True, size= (32,1), key=("-PLACEHOLDER-", placeholder_name), expand_x= True), 
-        sg.T("Data Column:"), sg.Combo(data_name, key=("-DATA-", placeholder_name), readonly= True)]], expand_x= True, key= placeholder_name)]
+        sg.Input(placeholder_name, readonly= True, size= (32,1), key=("-PLACEHOLDER-", placeholder_name), expand_x= True), 
+        sg.Text("Data Column:"), sg.Combo(data_name, key=("-DATA-", placeholder_name), readonly= True)]], expand_x= True, key= placeholder_name)]
     ]
 
 
@@ -143,5 +143,5 @@ def generate_pairs_event(placeholders: list[str], window:sg.Window, excel_sheet:
     if placeholders: # extend the layout of the scrollable column with the "Placeholder - Data" pairs
         for placeholder in placeholders:
             window.extend_layout(window['-PAIR_COLUMN-'], new_layout(placeholder, data_columns))
-        #window['-PAIR_COLUMN-'].contents_changed() # appears to not have any effect on the scrollable column, calling after event handling
+        #window['-PAIR_COLUMN-'].contents_changed() # appears to not have any effect on the scrollable column, calling after event handling instead
     return placeholders
