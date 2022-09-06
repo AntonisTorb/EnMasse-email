@@ -4,4 +4,4 @@
 *.xls*
 __pycache__
 *.html*
-/templates
+/attachments

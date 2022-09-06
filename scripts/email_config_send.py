@@ -15,7 +15,7 @@ def get_email_config_send_layout() -> list[list[sg.Element]]:
 
     email_settings_layout = [
         [sg.Text("Select e-mail service:"), sg.Combo(EMAIL_SERVICES, readonly= True, enable_events= True, size= (10,1), key= "-EMAIL_SERVICE-")],
-        [sg.Text("E-mail sever:"), sg.Input(expand_x= True, key= "-SERVER-"), sg.T("Port:"), sg.I(size= (5,1), enable_events= True, key= "-PORT-")],
+        [sg.Text("E-mail server:"), sg.Input(expand_x= True, key= "-SERVER-"), sg.T("Port:"), sg.I(size= (5,1), enable_events= True, key= "-PORT-")],
     ]
     alias_layout = [
         [sg.Checkbox("Set alias for sender:", tooltip= "This will appear as the sender instead of your e-mail address", key= "-SET_ALIAS-"), sg.I(expand_x= True, key= "-ALIAS-")]
@@ -32,7 +32,7 @@ def get_email_config_send_layout() -> list[list[sg.Element]]:
         [sg.Push(), sg.Button("Setup and Send"), sg.Push()]
     ]
     log_layout = [
-        [sg.Multiline("", autoscroll= True, write_only=True, auto_refresh=True, reroute_stdout= True, background_color= sg.theme_background_color(), text_color=sg.theme_text_color(), expand_x= True, expand_y= True, key= "-LOG-")]
+        [sg.Multiline("", autoscroll= True, write_only=True, auto_refresh=True, background_color= sg.theme_background_color(), text_color=sg.theme_text_color(), expand_x= True, expand_y= True, key= "-LOG-")] #, reroute_stdout= True)]
     ]
     email_config_send_layout = [
         [sg.Frame("E-mail settings", email_settings_layout, expand_x=True)],
@@ -104,7 +104,7 @@ def set_credentials() -> tuple[str, str] | tuple[None, None]:
 
 def send_emails():
     email_address, password = set_credentials()
-    if email_address is not None and password is not None:
+    if email_address is not None and password is not None: # did not cancel
         print("Sending...")
         # read server and port
         # setup smtp connection

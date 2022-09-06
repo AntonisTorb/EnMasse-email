@@ -54,6 +54,12 @@ def new_layout(placeholder_name: str, data_name: list[str]) -> list[list[sg.Elem
         sg.Text("Data Column:"), sg.Combo(data_name, key=("-DATA-", placeholder_name), readonly= True)]], expand_x= True, key= placeholder_name)]
     ]
 
+def target_email_address_layout(data_name: list[str]) -> list[list[sg.Element]]:
+    '''Returns a new row to be inserted into a PySimpleGUI Column Element'''
+
+    return [
+        [sg.Frame("",[[sg.T("Column of target e-mail addresses:"), sg.Push(), sg.Combo(data_name, key= "-TARGET_EMAIL_ADDRESS-", readonly= True)]], expand_x= True)]
+    ]
 
 def configure(event: tk.Event, canvas: tk.Canvas, frame_id: int) -> None:
     '''Allows elements in a scrollable column to extend upon window resize'''
@@ -72,7 +78,7 @@ def browse_template_event(window: sg.Window) -> None:
 
     template_to_load = sg.popup_get_file('',file_types=(("HTML files", "*.html*"),("text files", "*.txt*")), no_window=True)
     if template_to_load:
-        window["-TEMPLATE_PATH-"].update(Path(template_to_load)) 
+        window.Element("-TEMPLATE_PATH-").update(Path(template_to_load)) 
 
 def browse_data_event(window: sg.Window) -> None:
     '''Updates the data input field with the path to the data file. Also updates the excel sheet dropdown if loading excel file'''
@@ -129,19 +135,21 @@ def subject_actions(data_columns: list[str], values: dict, window: sg.Window) ->
 def generate_pairs_event(placeholders: list[str], window:sg.Window, excel_sheet: pd.DataFrame, template_text: str, values: dict) -> list[str]:
     '''Populates the scrollable column element with "Placeholder - Data" pairs generated from the template text and the data dataframe.'''
 
-    if placeholders: # removing old pairs from layout if any exist and resetting the placeholders list to empty
-        for placeholder in placeholders:
-            widget = window.Element(placeholder).Widget
-            del window.AllKeysDict[placeholder]
-            delete_widget(widget.master)
-        placeholders = []
-    data_columns = excel_sheet.columns.values.tolist() # determine list of columns from dataframe  
+    # if placeholders: # removing old pairs from layout if any exist and resetting the placeholders list to empty
+    #     for placeholder in placeholders:
+    #         widget = window.Element(placeholder).Widget
+    #         del window.AllKeysDict[placeholder]
+    #         delete_widget(widget.master)
+    #     placeholders = []
+    data_columns = excel_sheet.columns.values.tolist() # determine list of columns from dataframe
+    window.extend_layout(window.Element('-PAIR_COLUMN-'), target_email_address_layout(data_columns))
     window.Element("-SUBJECT_COLUMN-").update(disabled= False, values= data_columns) # enable the subject from column selection and add the column names as dropdown list values
+    window.Element("-ATTACHMENT_FILENAMES_COLUMN-").update(disabled= False, values= data_columns) # enable the attachment filenames from column selection and add the column names as dropdown list values
     subject_all = subject_actions(data_columns, values, window) # determine what subject to use and, if one subject for all, determine if it has placeholders and return them 
     temporary_placeholders = re.findall(REG, subject_all) + re.findall(REG, template_text) # combine the lists of placeholders from subject and from template
     placeholders = unique_values_list(temporary_placeholders) # only keep unique placeholder values
     if placeholders: # extend the layout of the scrollable column with the "Placeholder - Data" pairs
         for placeholder in placeholders:
-            window.extend_layout(window['-PAIR_COLUMN-'], new_layout(placeholder, data_columns))
+            window.extend_layout(window.Element('-PAIR_COLUMN-'), new_layout(placeholder, data_columns))
         #window['-PAIR_COLUMN-'].contents_changed() # appears to not have any effect on the scrollable column, calling after event handling instead
     return placeholders
