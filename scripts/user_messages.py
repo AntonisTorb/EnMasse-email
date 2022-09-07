@@ -9,7 +9,6 @@ def one_line_error_handler(text: str) -> None:
         [sg.Push(), sg.OK(), sg.Push()]
     ], font= FONT, modal= True).read(close= True)
 
-
 def multiline_error_handler(string_list: list[str]) -> None:
     '''Displays window with a longer error message.'''
 

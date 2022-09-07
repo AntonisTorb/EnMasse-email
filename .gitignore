@@ -2,6 +2,7 @@
 /env
 /templates
 *.xls*
+*.csv*
 __pycache__
 *.html*
 /attachments
