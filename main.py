@@ -9,7 +9,7 @@ import scripts.user_messages as user_messages
 
 def main():
     '''Main function'''
-
+    
     sg.theme(THEME)
     #print(sg.theme_text_color())
     
@@ -36,8 +36,10 @@ def main():
     placeholders = []
     template_text = ""
 
-    preview_index = 0
     total_emails_to_send = 0 # will be determined by the amount of rows in data dataframe
+    attachments_valid = False
+    
+    preview_index = 0
     preview_live= False
     preview_element = None
 
@@ -49,7 +51,7 @@ def main():
             case sg.WINDOW_CLOSE_ATTEMPTED_EVENT | sg.WIN_CLOSED: # | "Escape:27":
                 break
             case "Reset":
-                window.close()
+                window.close() # cannot break after calling main recursively, as it will be ignored until the new window closes. alternative is to just create a new window and reset all the values, but it's too much code.
                 main()
 
             # Message configuration events
@@ -65,10 +67,11 @@ def main():
                 else:
                     try:
                         data_df = msg_config.load_data(values)
-                        total_emails_to_send = len(data_df.index) # minus the title'
+                        total_emails_to_send = len(data_df.index)
+                        window.Element("-PROGRESS-").update(max= 10)#total_emails_to_send)
                         template_text = msg_config.load_template(values)
                         placeholders = msg_config.generate_pairs_event(placeholders, window, data_df, template_text, values)
-                        window.Element("-GENERATE_PAIRS-").update(disabled= True)
+                        window.Element("-GENERATE_PAIRS-").update(disabled= True) # if generate events button is pressed again, theresulting pairs have broken element keys for some reason, need to test more. If there is a need to correct something, reset.
                     except Exception as e:
                         user_messages.multiline_error_handler(["Unable to load file(s):", f"{str(e)}"])
                     #window['-PAIR_COLUMN-'].contents_changed() # appears to not have any effect on the scrollable column, calling after event handling
@@ -79,17 +82,18 @@ def main():
             case "-BROWSE_ATTACHMENTS_DIRECTORY-":
                 attachment_config.browse_attachment_directory_event(window)           
             case "Validate and preview":
-                if data_df is None: # error handling starts here
-                    user_messages.one_line_error_handler("Please generate the pairs in the first tab.")
-                elif not values["-ATTACHMENTS_DIRECTORY-"]:
-                    user_messages.one_line_error_handler("Please select an attachment directory.")
-                elif not values["-ATTACHMENT_FILENAMES_COLUMN-"]:
-                    user_messages.one_line_error_handler("Please select a data column.")
-                else:
-                    data_attachments_filenames = attachment_config.get_data_attachments_filenames(values, total_emails_to_send, data_df)
-                    directory_attachments_filenames = attachment_config.get_directory_attachments_filenames(values)
-                    attachment_config.attachment_validation(data_attachments_filenames, directory_attachments_filenames)
-                    attachment_config.attachment_preview(window, data_attachments_filenames, directory_attachments_filenames)
+                if values["-SEPARATE_ATTACHMENTS-"]:
+                    if data_df is None: # error handling starts here
+                        user_messages.one_line_error_handler("Please generate the pairs in the first tab.")
+                    elif not values["-ATTACHMENTS_DIRECTORY-"]:
+                        user_messages.one_line_error_handler("Please specify the dirctory containing the attachment files.")
+                    elif not values["-ATTACHMENT_FILENAMES_COLUMN-"]:
+                        user_messages.one_line_error_handler("Please select a data column.")
+                    else:
+                        data_attachments_filenames = attachment_config.get_data_attachments_filenames(values, total_emails_to_send, data_df)
+                        directory_attachments_filenames = attachment_config.get_directory_attachments_filenames(values)
+                        attachments_valid = attachment_config.attachment_validation(data_attachments_filenames, directory_attachments_filenames)
+                        attachment_config.attachment_preview(window, data_attachments_filenames, directory_attachments_filenames)
 
             # Preview events
             case "-SHOW_PREVIEW-":
@@ -156,6 +160,8 @@ def main():
                 #     user_messages.one_line_error_handler("Please specify the attachment file directory.")
                 # elif values["-SEPARATE_ATTACHMENTS-"] and not values["-ATTACHMENT_FILENAMES_COLUMN-"]:
                 #     user_messages.one_line_error_handler("Please specify the attachment data column.")
+                # elif values["-SEPARATE_ATTACHMENTS-"] and not attachments_valid:
+                #     user_messages.one_line_error_handler("Please validate the attachments and ensure that all required files exist in the directory.")               
                 # elif not values["-SERVER-"] or not values["-PORT-"]:
                 #     user_messages.one_line_error_handler("Please specify the e-mail server and port.")
                 # elif values["-SET_ALIAS-"] and not values["-ALIAS-"]:

@@ -1,6 +1,6 @@
 THEME = "DarkTeal12"#"DarkBlue14"
 FONT = ("Arial", 14)
-REG = r"\{(.*?)\}" # regex for: group of any characters inside curly brackets
+REG = r"\{([^\{\}]*)\}" # regex for: group of any characters inside curly brackets, except for curly brackets.
 EMAIL_SERVICES = ["Gmail", "Yahoo", "Outlook", "Custom"] 
 DEFAULT_EMAIL_SETTINGS = {
     "Gmail": {

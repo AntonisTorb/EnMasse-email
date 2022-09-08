@@ -138,7 +138,7 @@ def load_data(values: dict) -> pd.DataFrame:
     if str(data_path).endswith(".xls", 0, -1) or str(data_path).endswith(".xls"): # load data from excel file
         data_df =  pd.read_excel(data_path, sheet_name= sheet_name, header= 0)
         if data_df.empty:
-            raise ValueError(f"Selected sheet has no values.")
+            raise Exception("Selected sheet has no values.")
         find_problems_in_data(data_df)
     elif str(data_path).endswith(".csv"): # load data from .csv file
         data_df = pd.read_csv(data_path, delimiter= ";", header= 0)

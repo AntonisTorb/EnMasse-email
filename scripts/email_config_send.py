@@ -28,7 +28,21 @@ def get_email_config_send_layout() -> list[list[sg.Element]]:
         [sg.Push(), sg.Button("Setup and Send"), sg.Push()]
     ]
     log_layout = [
-        [sg.Multiline("", autoscroll= True, write_only=True, auto_refresh=True, background_color= sg.theme_background_color(), text_color=sg.theme_text_color(), expand_x= True, expand_y= True, key= "-LOG-")],#, reroute_stdout= True)]
+        [sg.Multiline("", 
+            autoscroll= True, 
+            write_only=True, 
+            auto_refresh=True, 
+            disabled= True, 
+            background_color= sg.theme_background_color(), 
+            text_color=sg.theme_text_color(), 
+            expand_x= True, 
+            expand_y= True, 
+            key= "-LOG-", 
+            echo_stdout_stderr= True,
+            reroute_stdout= True, # these 2 should not be needed I think, opened issue #5842 on PySimpleGUI GitHub
+            reroute_stderr= True
+            )],
+        [sg.ProgressBar(1, size= (1, 30), key= "-PROGRESS-", visible= False, expand_x= True)]
     ]
     email_config_send_layout = [
         [sg.Frame("E-mail settings", email_settings_layout, expand_x=True)],
@@ -93,10 +107,20 @@ def set_credentials() -> tuple[str, str] | tuple[None, None]:
                 else:
                     user_messages.one_line_error_handler("Please enter both e-mail address and password")
 
+def test_without_sending(mail: int) -> None:
+    '''Used to test the e-mail sending loop without sending any e-mails.'''
+
+    # if mail == 3:
+    #     raise Exception("testing")
+    # else:
+    print(f"Sending e-mail {mail} ...")
+
+
 def send_emails(values, window, total_emails_to_send):
 
-
     window.Element("-LOG-").update("")
+    window.Element('-PROGRESS-').update(visible= True, current_count= 0, max= total_emails_to_send)
+
     # email_address, password = set_credentials()
     # if email_address is not None and password is not None: # did not cancel
     #     print("Sending...")
@@ -112,15 +136,20 @@ def send_emails(values, window, total_emails_to_send):
 
     # read delay option and determine the delay in ms if selected
     total_emails_to_send = 10 # remove this, only for testing!
-    if values["-YES_DELAY-"]:
+    count_sent = 0
+ 
+    delay = values["-YES_DELAY-"]
+    if delay:
         delay_s = int(values["-DELAY-"])
         delay_ms = delay_s * 1000
-    if values["-YES_DELAY-"]:
         window.Element("Setup and Send").update(disabled= True)
         root = window.TKroot
         for mail in range(1, total_emails_to_send + 1):
-            root.after(delay_ms, print(f"Sending e-mail {mail} ...")) # call seperate function to send e-mails here instead of print
+            root.after(delay_ms, test_without_sending(mail)) # call seperate function to send e-mails here instead of print
             print(f"Successfully sent e-mail {mail}.")
+            count_sent += 1
+            window.Element('-PROGRESS-').update(current_count = count_sent, max= total_emails_to_send)
+            window.refresh()
         print(f"Finished sending {total_emails_to_send} e-mails!")
         window.Element("Setup and Send").update(disabled= False)
     else:
@@ -133,5 +162,3 @@ def send_emails(values, window, total_emails_to_send):
     
     # generate emails 
     # send one after the other with or without delay
-    # print relative excel/csv row after each corresponding message has been sent
-    # maybe add a progress bar if possible

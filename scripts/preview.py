@@ -1,8 +1,6 @@
 import tkinter as tk
 import PySimpleGUI as sg # pip install PySimpleGUI
-# html_parser has a typo in the tkhtmlview package, so I am importing a local podule with the typo corrected
-#from tkhtmlview import html_parser # pip install tkhtmlview
-import scripts.html_parser as html_parser
+from tkhtmlview import html_parser # pip install tkhtmlview
 import pandas as pd # pip install pandas openpyxl xlrd
 from pathlib import Path
 
