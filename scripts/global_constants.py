@@ -8,7 +8,7 @@ DEFAULT_EMAIL_SETTINGS = {
     },
     "Gmail": {
         "Server": "smtp.gmail.com", 
-        "Port": 465 
+        "Port": 587 
     },
     "Yahoo": {
         "Server": "smtp.mail.yahoo.com", 
