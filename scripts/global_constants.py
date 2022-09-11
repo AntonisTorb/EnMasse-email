@@ -1,8 +1,11 @@
 THEME = "DarkTeal12"#"DarkBlue14"
 FONT = ("Arial", 14)
 REG = r"\{([^\{\}]*)\}" # regex for: group of any characters inside curly brackets, except for curly brackets.
-EMAIL_SERVICES = ["Gmail", "Yahoo", "Outlook", "Custom"] 
 DEFAULT_EMAIL_SETTINGS = {
+    "Custom": {
+        "Server": "", 
+        "Port": ""
+    },
     "Gmail": {
         "Server": "smtp.gmail.com", 
         "Port": 465 
@@ -14,10 +17,7 @@ DEFAULT_EMAIL_SETTINGS = {
     "Outlook": {
         "Server": "smtp-mail.outlook.com", 
         "Port": 587 
-    },
-    "Custom": {
-        "Server": "", 
-        "Port": ""
     }
 }
+EMAIL_SERVICES = list(DEFAULT_EMAIL_SETTINGS.keys())
 URL_GMAIL = "https://support.google.com/accounts/answer/185833"

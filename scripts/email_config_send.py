@@ -2,26 +2,34 @@ import PySimpleGUI as sg # pip install PySimpleGUI
 from scripts.global_constants import FONT, EMAIL_SERVICES, DEFAULT_EMAIL_SETTINGS, URL_GMAIL
 import webbrowser
 import scripts.user_messages as user_messages
+import smtplib
+from email.message import EmailMessage
+from email.utils import formataddr
+import scripts.common_operations as common_operations
+import pandas as pd
+from pathlib import Path
+import mimetypes
 
 def get_email_config_send_layout() -> list[list[sg.Element]]:
     '''Returns the layout to use for the e-mail configuration and send tab'''
 
     email_settings_layout = [
         [sg.Text("Select e-mail service:"), 
-            sg.Combo(EMAIL_SERVICES, readonly= True, enable_events= True, size= (10, 1), key= "-EMAIL_SERVICE-")],
+            sg.Combo(EMAIL_SERVICES, default_value= EMAIL_SERVICES[0], readonly= True, enable_events= True, size= (10, 1), key= "-EMAIL_SERVICE-")],
         [sg.Text("E-mail server:"), sg.Input(expand_x= True, key= "-SERVER-"), 
             sg.Text("Port:"), sg.Input(size= (5, 1), enable_events= True, key= "-PORT-")],
+    ]
+    recipients_layout = [
+        [sg.Text("Column of recipient e-mail addresses:"), sg.Push(), 
+            sg.Combo([], size= (25,1), key= "-RECIPIENT_EMAIL_ADDRESS-", readonly= True, disabled= True)],
+        [sg.Checkbox("Include CC e-mail addresses from column:", key= "-INCLUDE_CC-"), sg.Push(), 
+            sg.Combo([], size= (25,1), key= "-CC_EMAIL_ADDRESS-", readonly= True, disabled= True)],
+        [sg.Checkbox("Include BCC e-mail addresses from column:", key= "-INCLUDE_BCC-"), sg.Push(), 
+            sg.Combo([], size= (25,1), key= "-BCC_EMAIL_ADDRESS-", readonly= True, disabled= True)]
     ]
     alias_layout = [
         [sg.Checkbox("Set alias for sender:", tooltip= "This will appear as the sender instead of your e-mail address", key= "-SET_ALIAS-"),
             sg.Input(expand_x= True, key= "-ALIAS-")]
-    ]
-    delay_list = [sec for sec in range(1, 6)] + [sec for sec in range (10, 31, 5)]
-    timing_layout = [
-        [sg.Radio("Send all e-mails with no delay.", group_id= "set_delay", default= True, key= "-NO_DELAY-")],
-        [sg.Radio("Send all e-mails with ", group_id= "set_delay", key= "-YES_DELAY-"),
-            sg.Combo(delay_list, default_value= 1, readonly= True, key= "-DELAY-"),
-            sg.Text("second(s) delay.")]
     ]
     send_layout = [
         [sg.Push(), sg.Text("Click to set sender credentials and send the e-mails."), sg.Push()],
@@ -39,15 +47,16 @@ def get_email_config_send_layout() -> list[list[sg.Element]]:
             expand_y= True, 
             key= "-LOG-", 
             echo_stdout_stderr= True,
-            reroute_stdout= True, # these 2 should not be needed I think, opened issue #5842 on PySimpleGUI GitHub
+            reroute_stdout= True,
             reroute_stderr= True
             )],
-        [sg.ProgressBar(1, size= (1, 30), key= "-PROGRESS-", visible= False, expand_x= True)]
+        [sg.ProgressBar(1, size= (1, 30), key= "-PROGRESS-", visible= False, bar_color = "green on white", expand_x= True)]
     ]
     email_config_send_layout = [
         [sg.Frame("E-mail settings", email_settings_layout, expand_x=True)],
+        [sg.Frame("Recipients", recipients_layout, expand_x= True)],
         [sg.Frame("Alias", alias_layout, expand_x= True)],
-        [sg.Frame("Timing", timing_layout, expand_x= True), sg.Frame("Send", send_layout, expand_x= True)],
+        [sg.Frame("Send", send_layout, expand_x= True)],
         [sg.Frame("Log", log_layout, expand_x= True, expand_y= True)]
     ]
 
@@ -110,55 +119,104 @@ def set_credentials() -> tuple[str, str] | tuple[None, None]:
 def test_without_sending(mail: int) -> None:
     '''Used to test the e-mail sending loop without sending any e-mails.'''
 
-    # if mail == 3:
-    #     raise Exception("testing")
-    # else:
-    print(f"Sending e-mail {mail} ...")
-
-
-def send_emails(values, window, total_emails_to_send):
-
-    window.Element("-LOG-").update("")
-    window.Element('-PROGRESS-').update(visible= True, current_count= 0, max= total_emails_to_send)
-
-    # email_address, password = set_credentials()
-    # if email_address is not None and password is not None: # did not cancel
-    #     print("Sending...")
-    
-    # server = values["-SERVER-"]
-    # port = values["-PORT-"]
-    # if values["-SET_ALIAS-"]
-    #    alias = values["-ALIAS-"]
-    # else:
-    #    alias = ""
-    
-    # setup smtp connection
-
-    # read delay option and determine the delay in ms if selected
-    total_emails_to_send = 10 # remove this, only for testing!
-    count_sent = 0
- 
-    delay = values["-YES_DELAY-"]
-    if delay:
-        delay_s = int(values["-DELAY-"])
-        delay_ms = delay_s * 1000
-        window.Element("Setup and Send").update(disabled= True)
-        root = window.TKroot
-        for mail in range(1, total_emails_to_send + 1):
-            root.after(delay_ms, test_without_sending(mail)) # call seperate function to send e-mails here instead of print
-            print(f"Successfully sent e-mail {mail}.")
-            count_sent += 1
-            window.Element('-PROGRESS-').update(current_count = count_sent, max= total_emails_to_send)
-            window.refresh()
-        print(f"Finished sending {total_emails_to_send} e-mails!")
-        window.Element("Setup and Send").update(disabled= False)
+    if mail == 3:
+        raise Exception("testing")
     else:
-        window.Element("Setup and Send").update(disabled= True)
-        for mail in range(1, total_emails_to_send + 1):
-            print(f"sending e-mail {mail} ...") # call seperate function to send e-mails here instead of print
-            print(f"Successfully sent e-mail {mail}.")
-        print(f"Finished sending {total_emails_to_send} e-mails!")
-        window.Element("Setup and Send").update(disabled= False)
+        print(f"...")       
+
+def get_email_components(data_df: pd.DataFrame, placeholders: list[str], mail_index: int, template_text: str, values: dict) -> tuple[str, str | None, str | None, str, list[Path], str]:
+    '''
+    Returns the recipient e-mail address, CC e-mail address (or None), BCC e-mail address (or None), the e-mail subject,
+    the attachment paths in a list, and the e-mail body text, in order to create the e-mail message.
+    '''
+
+    recipient_email_address = common_operations.get_email_address(values["-RECIPIENT_EMAIL_ADDRESS-"], data_df, mail_index)
+    if values["-INCLUDE_CC-"] and values["-CC_EMAIL_ADDRESS-"]:
+        cc_email_address = common_operations.get_email_address(values["-CC_EMAIL_ADDRESS-"], data_df, mail_index)
+    else:
+        cc_email_address = None
+    if values["-INCLUDE_BCC-"] and values["-BCC_EMAIL_ADDRESS-"]:
+        bcc_email_address = common_operations.get_email_address(values["-BCC_EMAIL_ADDRESS-"], data_df, mail_index)
+    else:
+        bcc_email_address = None
+    subject = common_operations.get_subject(values, placeholders, data_df, mail_index)
+    if not values["-NO_ATTACHMENTS-"]:
+        attachments_paths = common_operations.get_attachment_paths(data_df, mail_index, values)
+    else:
+        attachments_paths = []
+    if placeholders:
+        email_body = common_operations.replace_placeholders(placeholders, values, data_df, mail_index, template_text)
+    else:
+        email_body = template_text
+    return recipient_email_address, cc_email_address, bcc_email_address, subject, attachments_paths, email_body
+
+def create_and_send_email(server: smtplib.SMTP, alias: str, sender_email_address: str, recipient_email_address: str, cc_email_address: str | None, bcc_email_address: str | None, subject: str, attachments_paths: list[Path], email_body: str) -> None:
+    '''Create an email object according to the user settings and send it via the provided server connection.'''
+
+    message = EmailMessage()
+    message["From"] = formataddr((alias, sender_email_address))
+    message["To"] = recipient_email_address
+    if cc_email_address is not None:
+        message["CC"] = cc_email_address
+    if bcc_email_address is not None:
+        message["BCC"] = bcc_email_address
+    message["Subject"] = subject
+    # email_body = '''
+    # testing
+    # non html
+
+    # thanks
     
-    # generate emails 
-    # send one after the other with or without delay
+    # '''
+    message.set_content(email_body)
+    message.add_alternative(email_body, subtype= "html")
+    if attachments_paths:
+        for file in attachments_paths:
+            content_type, encoding  = mimetypes.guess_type(file)
+            if content_type is None or encoding is not None:
+                content_type = 'application/octet-stream'
+            maintype, subtype = content_type.split("/", 1)
+            with open(file, 'rb') as attachment_file:
+                message.add_attachment(attachment_file.read(), maintype= maintype, subtype= subtype, filename= file.name)  
+    server.send_message(message)# maybe return the message and send it after  
+
+def setup_and_send_event(data_df: pd.DataFrame, placeholders: list[str], template_text: str, total_emails_to_send: int, values: dict, window: sg.Window) -> None:
+    '''Set the e-mail account credentials, create the e-mails according to the user settings and send them via the created server connection.'''
+
+    sender_email_address, password = set_credentials()
+    if sender_email_address is not None and password is not None: # did not cancel
+        window.Element("-LOG-").update("")
+        window.Element('-PROGRESS-').update(visible= True, current_count= 0, max= total_emails_to_send)
+        server = values["-SERVER-"]
+        port = values["-PORT-"]
+        if values["-SET_ALIAS-"]:
+            alias = values["-ALIAS-"]
+        else:
+            alias = None
+        count_sent = 0
+        print("Establishing connection...")
+        try:
+            with smtplib.SMTP(server, port) as server:
+                server.starttls()
+                server.login(sender_email_address, password)
+                window.Element("Setup and Send").update(disabled= True)
+                for mail_index in range(total_emails_to_send):
+                    try:
+                        recipient_email_address, cc_email_address, bcc_email_address, subject, attachments_paths, email_body = get_email_components(data_df, placeholders, mail_index, template_text, values)
+                        print(f"Sending e-mail {mail_index + 1} ...") # call separate function to send e-mails here instead of print
+                        create_and_send_email(server, alias, sender_email_address, recipient_email_address, cc_email_address, bcc_email_address,subject, attachments_paths, email_body)
+                        print(f"Successfully sent e-mail {mail_index + 1}.")
+                        count_sent += 1
+                        window.Element('-PROGRESS-').update(current_count = count_sent, max= total_emails_to_send)
+                    except Exception as e:
+                        print(f"Error while sending email {mail_index + 1}: {type(e).__name__}, {str(e)}")
+                        window.Element('-PROGRESS-').update(bar_color = "red on white")
+                print(f"Finished sending {count_sent} e-mails.")
+                window.Element("Setup and Send").update(disabled= False)
+        except Exception as e:
+            print(f"Error with server connection: {type(e).__name__}, {str(e)}")
+        if count_sent == total_emails_to_send:
+            user_messages.operation_successful("Successfully sent all e-mails.")
+        else:
+            user_messages.multiline_error_handler(["There was an error while sending one or more e-mails.", "Please check the log for the error description and location."])
+            

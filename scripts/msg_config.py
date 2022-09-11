@@ -29,10 +29,7 @@ def get_msg_config_layout() ->list[list[sg.Element]]:
         [sg.Button("Generate Placeholder - Data pairs", key= "-GENERATE_PAIRS-")]
     ]
     pair_configure_layout= [
-        [sg.Column(layout= [
-            [sg.Frame("",[[sg.Text("Column of recipient e-mail addresses:"), sg.Push(), 
-                sg.Combo([], size= (25,1), key= "-RECIPIENT_EMAIL_ADDRESS-", readonly= True, disabled= True)]], expand_x= True)]
-        ], expand_x= True, expand_y= True, scrollable= True, vertical_scroll_only= True, key= "-PAIR_COLUMN-")],
+        [sg.Column(layout= [[]], expand_x= True, expand_y= True, scrollable= True, vertical_scroll_only= True, key= "-PAIR_COLUMN-")],
     ]
     msg_config_layout = [
         [sg.Frame("Template", template_layout, expand_x= True)],
@@ -146,7 +143,7 @@ def load_data(values: dict) -> pd.DataFrame:
     return data_df
 
 def unique_values_list(given_list: list) -> list:
-    '''Returns a list with unique values'''
+    '''Returns a list with unique values.'''
 
     returned_list = []
     for item in given_list:
@@ -154,9 +151,16 @@ def unique_values_list(given_list: list) -> list:
             returned_list.append(item)
     return returned_list
 
+def recipient_actions(window: sg.Window, data_columns: list[str]) -> None:
+    """Enables and sets values on the Recipient elements based on the data column names."""
+
+    window.Element("-RECIPIENT_EMAIL_ADDRESS-").update(disabled= False, values= data_columns)
+    window.Element("-CC_EMAIL_ADDRESS-").update(disabled= False, values= data_columns)
+    window.Element("-BCC_EMAIL_ADDRESS-").update(disabled= False, values= data_columns)
+
 def subject_actions(data_columns: list[str], values: dict, window: sg.Window) -> str:
     '''
-    Performs action based on the subject setting and the data values.
+    Enables and sets values on the Subject elements based on the subject setting and the data column names.
     If set to have one subject for all e-mails and have placeholders in the subject, returns the input element value, else returns empty string.
     '''
 
@@ -176,7 +180,7 @@ def subject_actions(data_columns: list[str], values: dict, window: sg.Window) ->
     return subject_all
 
 def attachment_actions(data_columns: list[str], window: sg.Window) -> None:
-    '''Performs action based on the attachment setting and the data values'''
+    '''Enables and sets values on the Attachment elements based on the attachment setting and the data column names'''
 
     window.Element("-ATTACHMENT_FILENAMES_COLUMN-").update(disabled= False, values= data_columns) # enable the attachment filenames from column selection and add the column names as dropdown list values
     if "Attachments" in data_columns:
@@ -189,10 +193,11 @@ def generate_pairs_event(placeholders: list[str], window: sg.Window, data_df: pd
     '''Populates the scrollable column element with "Placeholder - Data" pairs generated from the template text, subject, and the data dataframe.'''
 
     data_columns = data_df.columns.values.tolist() # determine list of columns from dataframe
-    window.Element("-RECIPIENT_EMAIL_ADDRESS-").update(disabled= False, values= data_columns)
+    recipient_actions(window, data_columns)
     subject_all = subject_actions(data_columns, values, window) # determine what subject to use and, if one subject for all, determine if it has placeholders and return them 
     attachment_actions(data_columns, window)
-    temporary_placeholders = re.findall(REG, subject_all) + re.findall(REG, template_text) # combine the lists of placeholders from subject and from template
+    placeholder_regex = re.compile(REG)
+    temporary_placeholders = placeholder_regex.findall(subject_all) + placeholder_regex.findall(template_text) # combine the lists of placeholders from subject and from template
     placeholders = unique_values_list(temporary_placeholders) # only keep unique placeholder values
     if placeholders: # extend the layout of the scrollable column with the "Placeholder - Data" pairs
         for placeholder in placeholders:

@@ -21,7 +21,7 @@ def get_attachment_config_layout() -> list[list[sg.Element]]:
     ]
     filename_preview_layout = [
         [sg.Push(), sg.Text("Validate if all attachments in the selected data column are in the attachment directory and preview the filenames."), sg.Push()],
-        [sg.Push(), sg.Text("Validation is required only when adding seperate attachments."), sg.Push()],
+        [sg.Push(), sg.Text("Validation is required only when adding separate attachments."), sg.Push()],
         [sg.Push(), sg.Button("Validate and preview"), sg.Push()],
         [sg.Push(), sg.Text("In Data:"), sg.Push(), sg.Push(), sg.Text("In Directory:"), sg.Push()],
         [sg.Multiline("", write_only= True, disabled= True, auto_refresh= True, background_color= sg.theme_background_color(), text_color= sg.theme_text_color(), expand_x= True, expand_y= True, key= "-ATTACHMENT_FILENAMES_IN_DATA-"),
@@ -74,8 +74,8 @@ def get_data_attachments_filenames(values: dict, total_emails_to_send: int, data
         attachments.append(df_column[preview_index])
     for attachment in attachments:
         if "," in attachment: # splitting on "," if there are multiple
-            seperate = attachment.split(",")
-            for filename in seperate:
+            separate = attachment.split(",")
+            for filename in separate:
                 if filename not in attachment_file_names: # only keeping unique values
                     attachment_file_names.append(filename)
         else:
@@ -92,7 +92,7 @@ def get_directory_attachments_filenames(values):
 
 def attachment_validation(data_attachments_filenames: list[str], directory_attachments_filenames: list[str]) -> bool:
     '''
-    Only required when adding seperate attachments with filenames from the data file.
+    Only required when adding separate attachments with filenames from the data file.
     Validating if all attachment names from the column exist in the selected directory, and if there are any usused files in the directory.
     If files specified in the data file are missing from the selected directory, displays error and returns false.
     '''
@@ -112,9 +112,8 @@ def attachment_validation(data_attachments_filenames: list[str], directory_attac
     if not all_used:
         user_messages.multiline_warning_handler(["There are unused files in the directory:", ", ".join(unused)])
     if all_found:
-        user_messages.operation_successful("All filenames have been located in the specified directory")
+        user_messages.operation_successful("All filenames have been located in the specified directory.")
         return True
     else:
         user_messages.multiline_error_handler(["File(s) not found in the selected directory:", ", ".join(not_found)])
         return False
-

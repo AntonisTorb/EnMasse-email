@@ -6,16 +6,10 @@ import scripts.attachment_config as attachment_config
 from scripts.global_constants import THEME, FONT
 import scripts.user_messages as user_messages
 
-
-def main():
-    '''Main function'''
-    
-    sg.theme(THEME)
-    #print(sg.theme_text_color())
-    
+def get_main_layout():
     message_configuration_layout = msg_config.get_msg_config_layout()
     attachment_configuration_layout = attachment_config.get_attachment_config_layout()
-    preview_layout = preview.get_preview_layout((30, 14), "-PREVIEW-")
+    preview_layout = preview.get_preview_layout((30, 10), "-PREVIEW-")
     email_config_send_layout = email_config_send.get_email_config_send_layout()
     
     layout = [
@@ -23,13 +17,23 @@ def main():
             [
                 [sg.Tab("Message configuration", message_configuration_layout),
                 sg.Tab("Attachment configuration", attachment_configuration_layout),
-                sg.Tab("Preview", preview_layout), 
-                sg.Tab("E-mail configuration and Send", email_config_send_layout)]
+                sg.Tab("E-mail configuration and Send", email_config_send_layout),
+                sg.Tab("Preview", preview_layout)]
             ], expand_x= True, expand_y= True)
         ],
         [sg.Button("Reset")]
     ]
-    window = sg.Window("Title", layout, font= FONT, return_keyboard_events= True, enable_close_attempted_event= True, resizable= True, finalize= True)
+    return layout
+
+
+def main():
+    '''Main function'''
+    
+    sg.theme(THEME)
+    #print(sg.theme_text_color())
+    
+    #layout = layout
+    window = sg.Window("Title", get_main_layout(), font= FONT, return_keyboard_events= True, enable_close_attempted_event= True, resizable= True, finalize= True)
     window.set_min_size((1080, 710))
 
     data_df = None # will be the dataframe containing the replacement data
@@ -51,7 +55,7 @@ def main():
             case sg.WINDOW_CLOSE_ATTEMPTED_EVENT | sg.WIN_CLOSED: # | "Escape:27":
                 break
             case "Reset":
-                window.close() # cannot break after calling main recursively, as it will be ignored until the new window closes. alternative is to just create a new window and reset all the values, but it's too much code.
+                window.close() # cannot break after calling main semi-recursively, as it will be ignored until the new window closes. alternative is to just create a new window and reset all the values, but it's too much code.
                 main()
 
             # Message configuration events
@@ -68,12 +72,11 @@ def main():
                     try:
                         data_df = msg_config.load_data(values)
                         total_emails_to_send = len(data_df.index)
-                        window.Element("-PROGRESS-").update(max= 10)#total_emails_to_send)
                         template_text = msg_config.load_template(values)
                         placeholders = msg_config.generate_pairs_event(placeholders, window, data_df, template_text, values)
                         window.Element("-GENERATE_PAIRS-").update(disabled= True) # if generate events button is pressed again, theresulting pairs have broken element keys for some reason, need to test more. If there is a need to correct something, reset.
                     except Exception as e:
-                        user_messages.multiline_error_handler(["Unable to load file(s):", f"{str(e)}"])
+                        user_messages.multiline_error_handler(["Unable to load file(s):", f"{type(e).__name__}: {str(e)}"])
                     #window['-PAIR_COLUMN-'].contents_changed() # appears to not have any effect on the scrollable column, calling after event handling
 
             # Attachment configuration events
@@ -116,9 +119,9 @@ def main():
                     try:
                         preview_index, preview_live, preview_element = preview.show_preview_event(placeholders, data_df, values, template_text, window)
                         window.Element("-ROW_TO_JUMP-").update(2, values= [row for row in range(2, total_emails_to_send + 2)])
-                    except Exception as e: # not all pairs have been matched or error while processing the html
+                    except Exception as e: # error while processing the html
                         preview_live = False
-                        user_messages.multiline_error_handler(["Unable to show preview due to error:", f"{str(e)}", "Please ensure that all pairs have been matched"])
+                        user_messages.multiline_error_handler(["Unable to show preview due to error:", f"{type(e).__name__}: {str(e)}"])
             case "-NEXT-" | "Right:39":
                 if (preview_index < total_emails_to_send - 1) and preview_live:
                     preview_index = preview.next_preview_event(preview_index, placeholders, values, data_df, template_text, preview_element, window)
@@ -139,39 +142,42 @@ def main():
                     window.Element("-PORT-").update(port[:3]) 
             case "Setup and Send":
                 #print(window.size) # testing
-                # missing_pairs = False
-                # for placeholder in placeholders:
-                #     if not values[("-DATA-", placeholder)]:
-                #         missing_pairs = True
-                #         break
-                # if data_df is None: # error handling starts here
-                #     user_messages.one_line_error_handler("Please generate the pairs in the first tab.")
-                # elif values["-SUBJECT_ALL-"] and not values["-SUBJECT-"]:
-                #     user_messages.one_line_error_handler("The subject is blank.")
-                # elif values["-SUBJECT_FROM_DATA-"] and not values["-SUBJECT_COLUMN-"]:
-                #     user_messages.one_line_error_handler("Please select the subject data column.")
-                # elif missing_pairs:
-                #     user_messages.one_line_error_handler("Please ensure that all placeholders have been paired with a data column.")
-                # elif not values["-RECIPIENT_EMAIL_ADDRESS-"]:
-                #     user_messages.one_line_error_handler("Please specify the data column containing the recipient e-mail address(es).")
-                # elif values["-SAME_ATTACHMENTS-"] and not values["-SAME_ATTACHMENT_FILES-"]:
-                #     user_messages.one_line_error_handler("Please specify the attachment file(s).")
-                # elif values["-SEPARATE_ATTACHMENTS-"] and not values["-ATTACHMENTS_DIRECTORY-"]:
-                #     user_messages.one_line_error_handler("Please specify the attachment file directory.")
-                # elif values["-SEPARATE_ATTACHMENTS-"] and not values["-ATTACHMENT_FILENAMES_COLUMN-"]:
-                #     user_messages.one_line_error_handler("Please specify the attachment data column.")
-                # elif values["-SEPARATE_ATTACHMENTS-"] and not attachments_valid:
-                #     user_messages.one_line_error_handler("Please validate the attachments and ensure that all required files exist in the directory.")               
-                # elif not values["-SERVER-"] or not values["-PORT-"]:
-                #     user_messages.one_line_error_handler("Please specify the e-mail server and port.")
-                # elif values["-SET_ALIAS-"] and not values["-ALIAS-"]:
-                #     user_messages.one_line_error_handler("Please specify your alias.")
-                #else:
+                missing_pairs = False
+                for placeholder in placeholders:
+                    if not values[("-DATA-", placeholder)]:
+                        missing_pairs = True
+                        break
+                if data_df is None: # error handling starts here
+                    user_messages.one_line_error_handler("Please generate the pairs in the first tab.")
+                elif values["-SUBJECT_ALL-"] and not values["-SUBJECT-"]:
+                    user_messages.one_line_error_handler("The subject is blank.")
+                elif values["-SUBJECT_FROM_DATA-"] and not values["-SUBJECT_COLUMN-"]:
+                    user_messages.one_line_error_handler("Please select the subject data column.")
+                elif missing_pairs:
+                    user_messages.one_line_error_handler("Please ensure that all placeholders have been paired with a data column.")
+                elif values["-SAME_ATTACHMENTS-"] and not values["-SAME_ATTACHMENT_FILES-"]:
+                    user_messages.one_line_error_handler("Please specify the attachment file(s).")
+                elif values["-SEPARATE_ATTACHMENTS-"] and not values["-ATTACHMENTS_DIRECTORY-"]:
+                    user_messages.one_line_error_handler("Please specify the attachment file directory.")
+                elif values["-SEPARATE_ATTACHMENTS-"] and not values["-ATTACHMENT_FILENAMES_COLUMN-"]:
+                    user_messages.one_line_error_handler("Please specify the attachment data column.")
+                elif values["-SEPARATE_ATTACHMENTS-"] and not attachments_valid:
+                    user_messages.one_line_error_handler("Please validate the attachments and ensure that all required files exist in the directory.")               
+                elif not values["-SERVER-"] or not values["-PORT-"]:
+                    user_messages.one_line_error_handler("Please specify the e-mail server and port.")
+                elif not values["-RECIPIENT_EMAIL_ADDRESS-"]:
+                    user_messages.one_line_error_handler("Please specify the data column containing the recipient e-mail address(es).")
+                elif values["-INCLUDE_CC-"] and not values["-CC_EMAIL_ADDRESS-"]:
+                    user_messages.one_line_error_handler("Please specify the data column containing the CC e-mail address(es).")
+                elif values["-INCLUDE_BCC-"] and not values["-BCC_EMAIL_ADDRESS-"]:
+                    user_messages.one_line_error_handler("Please specify the data column containing the BCC e-mail address(es).")
+                elif values["-SET_ALIAS-"] and not values["-ALIAS-"]:
+                    user_messages.one_line_error_handler("Please specify your alias.")
+                else:
 
                     # for i in range(50):   # testing logs
                     #     print(f"Printing {i = }.")
-
-                    email_config_send.send_emails(values, window, total_emails_to_send)
+                    email_config_send.setup_and_send_event(data_df, placeholders, template_text, total_emails_to_send, values, window)
         window.Element('-PAIR_COLUMN-').contents_changed() # inefficient to call after every event, but does not work in "msg_config.generate_pairs_event" function or after calling it in event handling
     window.close()
 
