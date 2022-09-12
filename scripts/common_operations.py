@@ -43,7 +43,7 @@ def get_attachment_paths(data_df: pd.DataFrame, index: int, values: dict) -> lis
             for path in separate_paths:
                 attachment_paths.append(Path(path))
         else:
-            attachment_paths.append = Path(attachments_path)
+            attachment_paths.append(Path(attachments_path))
     elif values["-SEPARATE_ATTACHMENTS-"]:
         directory_path = Path(values["-ATTACHMENTS_DIRECTORY-"])
         column_name = values["-ATTACHMENT_FILENAMES_COLUMN-"]

@@ -33,7 +33,7 @@ def main():
     #print(sg.theme_text_color())
     
     #layout = layout
-    window = sg.Window("Title", get_main_layout(), font= FONT, return_keyboard_events= True, enable_close_attempted_event= True, resizable= True, finalize= True)
+    window = sg.Window("Title", get_main_layout(), font= FONT, icon= "icon.ico", return_keyboard_events= True, enable_close_attempted_event= True, resizable= True, finalize= True)
     window.set_min_size((1080, 710))
 
     data_df = None # will be the dataframe containing the replacement data

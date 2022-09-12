@@ -89,7 +89,7 @@ def set_credentials() -> tuple[str, str] | tuple[None, None]:
         [sg.Frame("Warning", credentials_warning_layout, expand_x= True)],
         [sg.Push(), sg.Button("Send", key= "-SEND-"), sg.Cancel(), sg.Push()],
     ]
-    credentials_window = sg.Window("Set credentials and send e-mails", credentials_window_layout, font= FONT, modal= True)
+    credentials_window = sg.Window("Set credentials and send e-mails", credentials_window_layout, font= FONT, icon= "icon.ico", modal= True)
     while True:
         event, values = credentials_window.read()
         match event:
@@ -161,13 +161,6 @@ def create_and_send_email(server: smtplib.SMTP, alias: str, sender_email_address
     if bcc_email_address is not None:
         message["BCC"] = bcc_email_address
     message["Subject"] = subject
-    # email_body = '''
-    # testing
-    # non html
-
-    # thanks
-    
-    # '''
     message.set_content(email_body)
     message.add_alternative(email_body, subtype= "html")
     if attachments_paths:

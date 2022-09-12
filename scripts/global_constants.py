@@ -10,12 +10,12 @@ DEFAULT_EMAIL_SETTINGS = {
         "Server": "smtp.gmail.com", 
         "Port": 587 
     },
-    "Yahoo": {
-        "Server": "smtp.mail.yahoo.com", 
-        "Port": 465 
-    },
     "Outlook": {
         "Server": "smtp-mail.outlook.com", 
+        "Port": 587 
+    },
+    "Yahoo": {
+        "Server": "smtp.mail.yahoo.com", 
         "Port": 587 
     }
 }
