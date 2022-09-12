@@ -1,0 +1,13 @@
+Dear valued business partners,
+
+This is to inform you that the W8 form in your vendor account is due to expire at {W8_expiration_date}. Please ensure that you have uploaded a new form by the due date at your personal supplier portal by visiting the following link:
+
+Supplier portal for vendor account {vendor_account_no}: {vendor_name}:
+www.notarealcompany.com/supplierportal/{vendor_account_no}
+
+If you have any questions regarding this process, please do not hesitate to contact us at  accounting@notarealcompany.com.
+
+We, at NotARealCompany Inc., value your continued cooperation and look forward to doing business with you again in the future!
+
+Kind regards,
+The Accounts Payable Team

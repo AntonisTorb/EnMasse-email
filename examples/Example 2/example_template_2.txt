@@ -1,0 +1,19 @@
+Dear valued business partners,
+
+This is to inform you that we have a return case for a payment made to {vandor name}. The details of the payment are as follows:
+
+Your vendor account number: {vendor code}
+Invoice number for this payment: {inv no}
+Amount: {inv currency} {inv amount}
+Payment date: {payment date}
+Return reason: {return description}
+Bank account for this payment: {bank account}
+
+We would request your assistance in order to clear this payment. Attached on this e-mail you will find a vendor information form, where you can provide a new bank account for this payment and future payments. Please return it completed at accounting@notarealcompany.com.
+
+If the issue is not the bank account, please contact us directly at the above e-mail address in order toto reach a resolution.
+
+We, at NotARealCompany Inc., value your continued cooperation and look forward to doing business with you again in the future!
+
+Kind regards,
+The Accounts Payable Team

@@ -1,0 +1,10 @@
+Dear valued business partners,
+
+Please find attached invoice {inv_no} for the amount of {inv_amt} {inv_cur}, related to your purchase order {PO_ID}. According to the terms of payment as decided in the contract, the attached invoice is due before {inv_due_date}.
+
+If there are any questions regarding this invoice, please contact us at accounting@notarealcompany.com.
+
+We, at NotARealCompany Inc., value your continued cooperation and look forward to doing business with you again in the future!
+
+Kind regards,
+The Accounts Receivable Team
