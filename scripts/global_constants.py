@@ -1,6 +1,8 @@
-THEME = "DarkTeal12"#"DarkBlue14"
+THEME = "DarkTeal12" #"DarkBlue14"
 FONT = ("Arial", 14)
-REG = r"\{([^\{\}]*)\}" # regex for: group of any characters inside curly brackets, except for curly brackets.
+FONT_L = ("Arial", 20)
+FONT_XL = ("Arial", 30)
+REG = r"\{([^\{\}]*)\}"  # Regex for: group of any character(s) inside curly brackets, except for curly brackets.
 DEFAULT_EMAIL_SETTINGS = {
     "Custom": {
         "Server": "", 
@@ -13,11 +15,10 @@ DEFAULT_EMAIL_SETTINGS = {
     "Outlook": {
         "Server": "smtp-mail.outlook.com", 
         "Port": 587 
-    },
-    "Yahoo": {
-        "Server": "smtp.mail.yahoo.com", 
-        "Port": 587 
     }
 }
 EMAIL_SERVICES = list(DEFAULT_EMAIL_SETTINGS.keys())
 URL_GMAIL = "https://support.google.com/accounts/answer/185833"
+URL_GITHUB = "https://github.com/AntonisTorb/En-masse-email"
+SHOW = b'iVBORw0KGgoAAAANSUhEUgAAABkAAAAZCAYAAADE6YVjAAAABGdBTUEAALGPC/xhBQAAAYVpQ0NQSUNDIHByb2ZpbGUAACiRfZE9SMNAHMVfU8UPWkTsIOKQoTpZkCriKFUsgoXSVmjVweTSL2jSkKS4OAquBQc/FqsOLs66OrgKguAHiKOTk6KLlPi/pNAixoPjfry797h7BwiNClPNrklA1SwjFY+J2dyq2POKPgQxiAiiEjP1RHoxA8/xdQ8fX+8iPMv73J8jqORNBvhE4jmmGxbxBvHMpqVz3icOsZKkEJ8TTxh0QeJHrssuv3EuOizwzJCRSc0Th4jFYgfLHcxKhko8TRxWVI3yhazLCuctzmqlxlr35C8M5LWVNNdpjiKOJSSQhAgZNZRRgUV9laGRYiJF+zEP/4jjT5JLJlcZjBwLqEKF5PjB/+B3t2ZhKuomBWJA94ttf4wBPbtAs27b38e23TwB/M/Aldb2VxvA7Cfp9bYWPgIGtoGL67Ym7wGXO8Dwky4ZkiP5aQqFAvB+Rt+UA4Zugf41t7fWPk4fgAx1tXwDHBwC40XKXvd4d29nb/+eafX3A93gctLlp6KXAAAABmJLR0QAAAAAAAD5Q7t/AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5gkNEg46tJ5rsQAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAADmSURBVEjH7ZRNCsJADIW/sSeoFHoDNwWPJngSwfv0DCK4cu+u2Auoz4WvECtiQe2qb5PmZ16SJjMwYcK/kIYEScqAApgF8w1oUkrXr5IE8gLYAPPgPgNroPmULA0kx4QtIJ/Le763ydJA8saVz4EMuAa9GJoMSZmkStJOUu3v0vbOt5d0sqyCr7Re+3zlgl+SlIFk2QWFBAdJFz1wsV714pahiLLjjtsyc+v02s2BLbDwr8JyYXsO4PjG/qdNfFnJLii02wIr4OhZYHm0ve3NE/PcRp3JKNs1/j0Z9cb/+u2aMOF/uAO9Jyse9r6zVgAAAABJRU5ErkJggg=='
+HIDE = b'iVBORw0KGgoAAAANSUhEUgAAABkAAAAZCAYAAADE6YVjAAAABGdBTUEAALGPC/xhBQAAAYVpQ0NQSUNDIHByb2ZpbGUAACiRfZE9SMNAHMVfU8UPWkTsIOKQoTpZkCriKFUsgoXSVmjVweTSL2jSkKS4OAquBQc/FqsOLs66OrgKguAHiKOTk6KLlPi/pNAixoPjfry797h7BwiNClPNrklA1SwjFY+J2dyq2POKPgQxiAiiEjP1RHoxA8/xdQ8fX+8iPMv73J8jqORNBvhE4jmmGxbxBvHMpqVz3icOsZKkEJ8TTxh0QeJHrssuv3EuOizwzJCRSc0Th4jFYgfLHcxKhko8TRxWVI3yhazLCuctzmqlxlr35C8M5LWVNNdpjiKOJSSQhAgZNZRRgUV9laGRYiJF+zEP/4jjT5JLJlcZjBwLqEKF5PjB/+B3t2ZhKuomBWJA94ttf4wBPbtAs27b38e23TwB/M/Aldb2VxvA7Cfp9bYWPgIGtoGL67Ym7wGXO8Dwky4ZkiP5aQqFAvB+Rt+UA4Zugf41t7fWPk4fgAx1tXwDHBwC40XKXvd4d29nb/+eafX3A93gctLlp6KXAAAABmJLR0QAAAAAAAD5Q7t/AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5gkNEhY3SDSPVQAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAErSURBVEjH7ZbfacMwEId/1HgDg7A2CCrZoJAhAn3sCJmgT93FFLJACGSDQjBkhbwFukG/vJzgEKL/3BQCERzIutN9Pt3pbOm/BtAAHdBcEtIBAzC7GMgimQGvN9BkkEkAeidh0ktUQAHYAG9OtkCaBCtACYguimhr2x/D3LEEd0w+otbp8/z7MHOYgL1t6CoRPQA7s0lFvlKpq0ECMAJHYJ6NCidrYAkczDYVdnPbPwKhBunN4AjESjdIJhho9BGbbXQ++rx+5zgfkk42933sXdKLpGd7vpf0KGkl6cn0MvsMPJm/T3Oy80l0eRlsrVYMX+ekcv5lxbS5U1eKYVIpl7DobntroDWwMF3z2wvpYfm2b1xUf9PrKr0rFKV7+0xcB2jw3eA6/37KcQZQoxGECxPs8QAAAABJRU5ErkJggg=='

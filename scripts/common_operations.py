@@ -1,5 +1,6 @@
-import pandas as pd
 from pathlib import Path
+import pandas as pd  # pip install pandas openpyxl xlrd
+
 
 def get_email_address(column, data_df, index):
     '''Returns the e-mail address according to user input.'''
@@ -7,6 +8,7 @@ def get_email_address(column, data_df, index):
     df_column = data_df[column]
     recipient_email_address = df_column[index]
     return recipient_email_address
+
 
 def replace_placeholders(placeholders: list[str], values: dict, data_df: pd.DataFrame, index: int, template_text: str) -> str:
     '''Returns the formatted text after replacing the placeholders with the dataframe data.'''
@@ -17,6 +19,7 @@ def replace_placeholders(placeholders: list[str], values: dict, data_df: pd.Data
         df_column = data_df[column_name]
         dict[placeholder] = df_column[index]
     return template_text.format(**dict)
+
 
 def get_subject(values: dict, placeholders: list[str], data_df: pd.DataFrame, index: int) -> None:
     '''Returns the subject according to user input.'''
@@ -32,13 +35,15 @@ def get_subject(values: dict, placeholders: list[str], data_df: pd.DataFrame, in
         subject = df_column[index]
     return subject
 
+
 def get_attachment_paths(data_df: pd.DataFrame, index: int, values: dict) -> list[Path]:
     '''Returns a list containing all the attachment file paths.'''
 
-    attachment_paths = [] # default for no attachments
+    attachment_paths = []
     if values["-SAME_ATTACHMENTS-"]:
         attachments_path = values["-SAME_ATTACHMENT_FILES-"]
-        if ";" in attachments_path:
+        
+        if ";" in attachments_path:  # Splitting on ";" if there are multiple attachment files.
             separate_paths = attachments_path.split(";")
             for path in separate_paths:
                 attachment_paths.append(Path(path))
@@ -49,7 +54,8 @@ def get_attachment_paths(data_df: pd.DataFrame, index: int, values: dict) -> lis
         column_name = values["-ATTACHMENT_FILENAMES_COLUMN-"]
         df_column = data_df[column_name]
         filenames = df_column[index]
-        if "," in filenames:
+        
+        if "," in filenames:  # Splitting on "," if there are multiple attachment files.
             separate_filenames = filenames.split(",")
             for filename in separate_filenames:
                 attachment_paths.append(directory_path / filename)
@@ -57,12 +63,14 @@ def get_attachment_paths(data_df: pd.DataFrame, index: int, values: dict) -> lis
             attachment_paths.append(directory_path / filenames)
     return attachment_paths
 
-def get_attachment_filenames(values, data_df, index):
+
+def get_attachment_filenames(values: dict, data_df:pd.DataFrame, index: int) -> list[str]:
     '''Returns the attachment filename(s) according to user input.'''
     
     filenames = ""
     attachment_paths = get_attachment_paths(data_df, index, values)
-    if attachment_paths: # a little inefficient to reverse the work of get_attachment_paths, but less repeated code
+    
+    if attachment_paths:  # A little inefficient to reverse the work of get_attachment_paths, but less repeated code.
         filenames_list = []
         for path in attachment_paths:
             filenames_list.append(path.name)
