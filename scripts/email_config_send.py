@@ -4,9 +4,9 @@ import mimetypes
 from pathlib import Path
 import smtplib
 import webbrowser
-from scripts.global_constants import FONT, EMAIL_SERVICES, DEFAULT_EMAIL_SETTINGS, URL_GMAIL, SHOW, HIDE
-import scripts.common_operations as common_operations
-import scripts.user_messages as user_messages
+from .global_constants import FONT, EMAIL_SERVICES, DEFAULT_EMAIL_SETTINGS, URL_GMAIL, SHOW, HIDE
+from . import common_operations
+from . import user_messages
 import pandas as pd  # pip install pandas openpyxl xlrd
 import PySimpleGUI as sg  # pip install PySimpleGUI
 

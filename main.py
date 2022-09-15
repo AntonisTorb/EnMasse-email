@@ -1,10 +1,5 @@
 import webbrowser
-import scripts.attachment_config as attachment_config
-import scripts.email_config_send as email_config_send
-from scripts.global_constants import THEME, FONT, FONT_L, FONT_XL, URL_GITHUB
-import scripts.msg_config as msg_config
-import scripts.preview as preview
-import scripts.user_messages as user_messages
+from scripts import attachment_config, email_config_send, msg_config, preview, user_messages, THEME, FONT, FONT_L, FONT_XL, URL_GITHUB
 import PySimpleGUI as sg  # pip install PySimpleGUI
 
 
@@ -12,8 +7,8 @@ def get_info() -> None:
     '''Displays the info window.'''
 
     info_layout = [
-        [sg.Push(), sg.Text("~~EnMasse~~", font= FONT_XL), sg.Push()],
-        [sg.Push(), sg.Text("Send E-mails en masse", font= FONT_L), sg.Push()],
+        [sg.Push(), sg.Text("~~EnMasse E-mail~~", font= FONT_XL), sg.Push()],
+        [sg.Push(), sg.Text("Send E-mails en masse using a template.", font= FONT_L), sg.Push()],
         [sg.Push(), sg.Text("Version 1.0", font= FONT), sg.Push()],
         [sg.HorizontalSeparator()],
         [sg.Push(), sg.T("Github Repository", key= "-GITHUB_URL-", enable_events= True, tooltip= URL_GITHUB, text_color= "Blue", background_color= "Grey", font= FONT + ("underline", )), sg.Push()],
@@ -43,9 +38,10 @@ def get_main_layout() -> list[list[sg.Element]]:
         [sg.TabGroup(
             [
                 [sg.Tab("Message configuration", message_configuration_layout),
-                sg.Tab("Attachment configuration", attachment_configuration_layout),
-                sg.Tab("E-mail configuration and Send", email_config_send_layout),
-                sg.Tab("Preview", preview_layout)]
+                    sg.Tab("Attachment configuration", attachment_configuration_layout),
+                    sg.Tab("E-mail configuration and Send", email_config_send_layout),
+                    sg.Tab("Preview", preview_layout)
+                ]
             ], expand_x= True, expand_y= True)
         ],
         [sg.Button("Reset"), sg.Push(), sg.Button("Info")]
@@ -59,7 +55,7 @@ def main():
     sg.theme(THEME)
     #print(sg.theme_text_color())
     
-    window = sg.Window("Title", get_main_layout(), font= FONT, icon= "icon.ico", return_keyboard_events= True, enable_close_attempted_event= True, resizable= True, finalize= True)
+    window = sg.Window("EnMasse E-mail", get_main_layout(), font= FONT, icon= "icon.ico", return_keyboard_events= True, enable_close_attempted_event= True, resizable= True, finalize= True)
     window.set_min_size((1080, 710))
 
     data_df = None  # Will be the dataframe containing the replacement data.

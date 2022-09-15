@@ -1,5 +1,5 @@
 import tkinter as tk
-import scripts.common_operations as common_operations
+from . import common_operations
 import pandas as pd  # pip install pandas openpyxl xlrd
 import PySimpleGUI as sg  # pip install PySimpleGUI
 from tkhtmlview import html_parser  # pip install tkhtmlview

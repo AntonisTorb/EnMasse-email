@@ -1,8 +1,8 @@
 from pathlib import Path
 import re
 import tkinter as tk
-from scripts.global_constants import REG
-import scripts.user_messages as user_messages
+from .global_constants import REG
+from . import user_messages
 import pandas as pd  # pip install pandas openpyxl xlrd
 import PySimpleGUI as sg # pip install PySimpleGUI
 

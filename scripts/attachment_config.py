@@ -1,5 +1,5 @@
 from pathlib import Path
-import scripts.user_messages as user_messages
+from . import user_messages
 import pandas as pd  # pip install pandas openpyxl xlrd
 import PySimpleGUI as sg  # pip install PySimpleGUI
 
@@ -13,7 +13,7 @@ def get_attachment_config_layout() -> list[list[sg.Element]]:
         [sg.Text("Select attachment file(s):", pad= ((50, 0) , (0, 0))), 
             sg.Input(key= "-SAME_ATTACHMENT_FILES-", disabled= True, expand_x= True), 
             sg.Button("Browse", key= "-BROWSE_ATTACHMENT_FILES-")],
-        [sg.Radio("Separate attachment for each file.", group_id= "set_attachment_option", key= "-SEPARATE_ATTACHMENTS-")],
+        [sg.Radio("Separate attachment for each e-mail.", group_id= "set_attachment_option", key= "-SEPARATE_ATTACHMENTS-")],
         [sg.Text("Select attachments directory:", pad= ((50, 0) , (0, 0))), 
             sg.Input(key= "-ATTACHMENTS_DIRECTORY-", disabled= True, expand_x= True), 
             sg.Button("Browse", key= "-BROWSE_ATTACHMENTS_DIRECTORY-")],

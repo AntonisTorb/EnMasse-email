@@ -1,4 +1,4 @@
-from scripts.global_constants import FONT
+from .global_constants import FONT
 import PySimpleGUI as sg  # pip install PySimpleGUI
 
 
