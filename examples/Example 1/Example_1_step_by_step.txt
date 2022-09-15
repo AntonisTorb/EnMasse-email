@@ -1,0 +1,85 @@
+--------------------------------------------WARNING!-------------------------------------------------
+-----------------------------------------------------------------------------------------------------
+If you want to test the application by actually sending the examples, make sure to change 
+the recipient e-mail addresses to real ones in the "example_data_1.xlsx (or .csv) file"
+-----------------------------------------------------------------------------------------------------
+
+After running the application:
+-----------------------------------------------------------------------------------------------------
+i) In tab "Message Configuration":
+-----------------------------------------------------------------------------------------------------
+	1) Click browse on the "Template" frame and specify the "example_template_1.html( or .txt)" 
+		template file.
+		*** Note: It is highly recommended to use the html file.
+	2) Click Browse on the "Data" frame and specify the "example_data_1.xlsx( or .csv)" data file.
+	3) If the source data file is an excel file, choose the sheet name from the dropdown menu.
+	4) In the "Subject" frame, check the option to include the subject in the pair generation and
+		enter the following in the input text above without the quotation marks: "Invoice {inv_no}"
+	5) Click the "Generate Placeholder - Data pairs" button in the "Pairing" frame.
+	6) The Pairs that appear in the "Configure Pairs" frame should be paired by default, but if any
+		is blank, make sure to select the appropriate data column by the title.
+-----------------------------------------------------------------------------------------------------
+ii) In tab "Attachment Configuration":
+-----------------------------------------------------------------------------------------------------
+	1) Select the "Seperate attachments for each e-mail" option in the "Select attachment(s)" frame.
+	2) Click browse below and specify the directory where the attachment files are located.
+	3) Right below, select the column name that cointains the attachment filenames if necessary.
+	4) In the "Attachment filename validation and preview" frame, click on the "Validate and preview"
+		button to validate that there are no missing attachment files in the specified directory.
+		*** Note: you should receive a warning that there are unused files in the directory, but you
+		*** can continue without addressing it.
+-----------------------------------------------------------------------------------------------------
+iii) In tab "E-mail configuration and Send":
+-----------------------------------------------------------------------------------------------------
+	1) Specify the Server and Port for the connection in the "E-mail settings frame" or select the 
+		service from the dropdown menu.
+	2) In the "Recipients" frame specify the column contating the recipient e-mail addresses if
+		necessary.
+		*** Note: At this point, you can preview the e-mails if you wish in the "Preview" tab.
+	3) If you want, set an alias by checking the option in the "Alias" frame and entering the alias
+		in the input field.
+	4) Click on the "Setup and Send" button to enter your credentials and send the e-mails.
+-----------------------------------------------------------------------------------------------------
+iv) In tab "Preview":
+-----------------------------------------------------------------------------------------------------
+*** Note: The preview is not perfect and many html elements will not show properly in it, but you 
+*** will still be able to see that the placeholders have been replaced with the data values.
+	1) After step iii) - 2) you can preview the e-mails by clicking the "Show Preview button".
+	2) Use the arrow buttons to navigate the e-mails, or use the "Jump to row" button to just to the
+		specified row from the dropdown menu.
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	
