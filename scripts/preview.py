@@ -9,8 +9,8 @@ def get_preview_layout(size: tuple[int], key: str) -> list[list[sg.Element]]:
     '''Returns the layout to use for the preview tab.'''
 
     preview_warning_layout = [
-        [sg.Push(), sg.Text("This is just a preview to confirm that placeholders are replaced correctly."), sg.Push()],
-        [sg.Push(), sg.Text("HTML Styles and Elements might not show correctly."), sg.Push()]
+        [sg.Push(), sg.Text("This is just a preview to confirm that placeholders are replaced according to the provided data file."), sg.Push()],
+        [sg.Push(), sg.Text("Plain text line breaks, and HTML Styles and Elements might not show correctly."), sg.Push()]
     ]
     column_1_layout = [
         [sg.Text("Recipient E-mail address:")],
@@ -45,7 +45,7 @@ def get_preview_layout(size: tuple[int], key: str) -> list[list[sg.Element]]:
 
 
 def set_html(widget: tk.Widget, html: str, strip: bool = True) -> None:
-    '''Clears a tkinder widget of its contents and add new contents'''
+    '''Clears a tkinder widget of its contents and adds new contents.'''
 
     parser = html_parser.HTMLTextParser()
     prev_state = widget.cget("state")
@@ -82,7 +82,7 @@ def update_preview_elements(data_df: pd.DataFrame, placeholders: list[str], prev
 
 
 def show_preview_event(placeholders: list[str], data_df: pd.DataFrame, values: dict, template_text: str, window: sg.Window) -> tuple[int, bool, tk.Widget]:
-    '''When the "Show Preview" button is pressed, shows the preview of the first e-mail after replacement of placeholders'''
+    '''When the "Show Preview" button is pressed, shows the preview of the first e-mail after replacement of placeholders.'''
 
     preview_index = 0
     if placeholders:
@@ -96,7 +96,7 @@ def show_preview_event(placeholders: list[str], data_df: pd.DataFrame, values: d
 
 
 def next_preview_event(preview_index: int, placeholders: list[str], values: dict, data_df: pd.DataFrame, template_text: str, preview_element: tk.Widget, window: sg.Window) -> int:
-    '''Shows the next e-mail preview according to the next dataframe element'''
+    '''Shows the next e-mail preview according to the next dataframe element.'''
     
     preview_index += 1
     preview_text = common_operations.replace_placeholders(placeholders, values, data_df, preview_index, template_text)
@@ -106,7 +106,7 @@ def next_preview_event(preview_index: int, placeholders: list[str], values: dict
 
 
 def previous_preview_event(preview_index: int, placeholders: list[str], values: dict, data_df: pd.DataFrame, template_text: str, preview_element: tk.Widget, window: sg.Window) -> int:
-    '''Shows the previous e-mail preview according to the previous dataframe element'''
+    '''Shows the previous e-mail preview according to the previous dataframe element.'''
     
     preview_index -= 1
     preview_text = common_operations.replace_placeholders(placeholders, values, data_df, preview_index, template_text)
@@ -116,7 +116,7 @@ def previous_preview_event(preview_index: int, placeholders: list[str], values: 
     
 
 def jump_to_row_event(values: dict, placeholders: list[str], data_df: pd.DataFrame, template_text: str, preview_element: tk.Widget, window: sg.Window) -> int:
-    '''Shows the selected e-mail preview according to the selected dataframe element'''
+    '''Shows the selected e-mail preview according to the selected dataframe element.'''
     
     preview_index = values["-ROW_TO_JUMP-"] - 2
     preview_text = common_operations.replace_placeholders(placeholders, values, data_df, preview_index, template_text)

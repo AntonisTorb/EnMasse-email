@@ -67,21 +67,21 @@ def new_layout(placeholder_name: str, data_name: list[str]) -> list[list[sg.Elem
 
 
 def configure(event: tk.Event, canvas: tk.Canvas, frame_id: int) -> None:
-    '''Allows elements in a scrollable column to extend upon window resize'''
+    '''Performs the expansion of elements in a scrollable column upon window resize.'''
 
     canvas.itemconfig(frame_id, width= canvas.winfo_width()) 
 
 
-def expand_scrollable_column(window: sg.Window, element_key: str) -> None:
-    '''Allow for elements in scrollable collumn to expand on window resize'''
+def expand_scrollable_column(window: sg.Window, column_key: str) -> None:
+    '''Allow for elements in scrollable column to expand on window resize.'''
 
-    frame_id = window.Element(element_key).Widget.frame_id
-    canvas = window.Element(element_key).Widget.canvas
+    frame_id = window.Element(column_key).Widget.frame_id
+    canvas = window.Element(column_key).Widget.canvas
     canvas.bind("<Configure>", lambda event, canvas= canvas, frame_id= frame_id: configure(event, canvas, frame_id))
 
 
 def browse_template_event(window: sg.Window) -> None:
-    '''Updates the template input field with the path to the template file'''
+    '''Updates the template input field with the path to the template file.'''
 
     template_to_load = sg.popup_get_file('', file_types=(("HTML files", "*.html*"), ("text files", "*.txt*")), no_window= True)
     if template_to_load:
@@ -89,13 +89,13 @@ def browse_template_event(window: sg.Window) -> None:
 
 
 def browse_data_event(window: sg.Window) -> None:
-    '''Updates the data input field with the path to the data file. Also updates the excel sheet dropdown if loading excel file'''
+    '''Updates the data input field with the path to the data file. Also updates the excel sheet dropdown if loading excel file.'''
 
-    data_to_load = sg.popup_get_file('',file_types=(("Excel files", "*.xls*"), ("CSV files", "*.csv*")), no_window= True)
+    data_to_load = sg.popup_get_file('', file_types=(("Excel files", "*.xls*"), ("CSV files", "*.csv*")), no_window= True)
     if data_to_load:
         data_path = Path(data_to_load)
         window.Element("-DATA_PATH-").update(data_path)
-        if data_to_load.endswith(".xls", 0, -1) or data_to_load.endswith(".xls"): #.xls or .xls* files
+        if data_to_load.endswith(".xls", 0, -1) or data_to_load.endswith(".xls"): # .xls* files
             with pd.ExcelFile(data_path) as excel_file:
                 sheets = excel_file.sheet_names
             window.Element("-SHEET_NAMES-").update(disabled= False, values= sheets)
@@ -104,7 +104,7 @@ def browse_data_event(window: sg.Window) -> None:
 
 
 def load_template(values: dict) -> str:
-    '''Returns the template file based on the template file path'''
+    '''Returns the template file based on the template file path.'''
 
     template_path = Path(values["-TEMPLATE_PATH-"])
     with open(template_path) as template_file:
@@ -138,7 +138,7 @@ def find_problems_in_data(data_df: pd.DataFrame) -> None:
             col_row_str = str(problem_columns_rows[0])
         else:
             col_row_str = ", ".join(problem_columns_rows)
-        user_messages.multiline_warning_handler(["Problems found!", f"Column title(s): {col_str}", f"Value(s) at (column, row): {col_row_str}", "Please reset the app if you wish to correct them."])
+        user_messages.multiline_warning_handler(["Problems found!", f"Column title(s): {col_str}", f"Value(s) at (column, row): {col_row_str}", "You might reset the app if you wish to correct them."])
 
 
 def load_data(values: dict) -> pd.DataFrame:
@@ -146,14 +146,16 @@ def load_data(values: dict) -> pd.DataFrame:
 
     data_path = Path(values["-DATA_PATH-"])
     sheet_name = values["-SHEET_NAMES-"]
-    if str(data_path).endswith(".xls", 0, -1) or str(data_path).endswith(".xls"):  # Load data from excel file.
+
+    if str(data_path).endswith(".xls", 0, -1) or str(data_path).endswith(".xls"):
         data_df =  pd.read_excel(data_path, sheet_name= sheet_name, header= 0)
         if data_df.empty:
             raise Exception("Selected sheet has no values.")
         find_problems_in_data(data_df)
-    elif str(data_path).endswith(".csv"):  # Load data from .csv file.
+    elif str(data_path).endswith(".csv"):
         data_df = pd.read_csv(data_path, delimiter= ";", header= 0)
         find_problems_in_data(data_df)
+    
     return data_df
 
 
@@ -168,11 +170,22 @@ def unique_values_list(given_list: list) -> list:
 
 
 def recipient_actions(window: sg.Window, data_columns: list[str]) -> None:
-    """Enables and sets values on the Recipient elements based on the data column names."""
+    """Enables and sets values on the Recipient, CC and BCC elements based on the data column names."""
 
     window.Element("-RECIPIENT_EMAIL_ADDRESS-").update(disabled= False, values= data_columns)
     window.Element("-CC_EMAIL_ADDRESS-").update(disabled= False, values= data_columns)
     window.Element("-BCC_EMAIL_ADDRESS-").update(disabled= False, values= data_columns)
+    if "recipient" in map(str.lower, data_columns):
+        index = list(map(str.lower, data_columns)).index("recipient")
+        window.Element("-RECIPIENT_EMAIL_ADDRESS-").update(data_columns[index])
+    if "cc" in map(str.lower, data_columns):
+        window.Element("-INCLUDE_CC-").update(True)
+        index = list(map(str.lower, data_columns)).index("cc")
+        window.Element("-CC_EMAIL_ADDRESS-").update(data_columns[index])
+    if "bcc" in map(str.lower, data_columns):
+        window.Element("-INCLUDE_BCC-").update(True)
+        index = list(map(str.lower, data_columns)).index("bcc")
+        window.Element("-BCC_EMAIL_ADDRESS-").update(data_columns[index])
 
 
 def subject_actions(data_columns: list[str], values: dict, window: sg.Window) -> str:
@@ -180,12 +193,13 @@ def subject_actions(data_columns: list[str], values: dict, window: sg.Window) ->
     If set to have one subject for all e-mails and have placeholders in the subject, returns the input element value, else returns empty string.
     '''
 
-    window.Element("-SUBJECT_COLUMN-").update(disabled= False, values= data_columns)  # Enable the subject from column selection and add the column names as dropdown list values.
+    window.Element("-SUBJECT_COLUMN-").update(disabled= False, values= data_columns)
     subject_all = ""
-    if "Subject" in data_columns and not values["-PAIR_SUBJECT-"]:
+    if "subject" in map(str.lower, data_columns) and not values["-PAIR_SUBJECT-"]:
+        index = list(map(str.lower, data_columns)).index("subject")
         window.Element("-SUBJECT_ALL-").update(False)
         window.Element("-SUBJECT_FROM_DATA-").update(True)
-        window.Element("-SUBJECT_COLUMN-").update("Subject")
+        window.Element("-SUBJECT_COLUMN-").update(data_columns[index])
     elif values["-SUBJECT_ALL-"] and values["-PAIR_SUBJECT-"]: 
         window.Element("-SUBJECT_ALL-").update(True)
         window.Element("-SUBJECT_FROM_DATA-").update(False)
@@ -197,26 +211,27 @@ def subject_actions(data_columns: list[str], values: dict, window: sg.Window) ->
 
 
 def attachment_actions(data_columns: list[str], window: sg.Window) -> None:
-    '''Enables and sets values on the Attachment elements based on the attachment setting and the data column names'''
+    '''Enables and sets values on the Attachment elements based on the attachment setting and the data column names.'''
 
-    window.Element("-ATTACHMENT_FILENAMES_COLUMN-").update(disabled= False, values= data_columns)  # Enable the attachment filenames from column selection and add the column names as dropdown list values.
-    if "Attachments" in data_columns:
+    window.Element("-ATTACHMENT_FILENAMES_COLUMN-").update(disabled= False, values= data_columns)
+    if "attachments" in map(str.lower, data_columns):
+        index = list(map(str.lower, data_columns)).index("attachments")
         window.Element("-NO_ATTACHMENTS-").update(False)
         window.Element("-SAME_ATTACHMENTS-").update(False)
         window.Element("-SEPARATE_ATTACHMENTS-").update(True)
-        window.Element("-ATTACHMENT_FILENAMES_COLUMN-").update("Attachments")
+        window.Element("-ATTACHMENT_FILENAMES_COLUMN-").update(data_columns[index])
 
-
+    
 def get_placeholders(placeholders: list[str], window: sg.Window, data_df: pd.DataFrame, template_text: str, values: dict) -> list[str]:
     '''Populates the scrollable column element with "Placeholder - Data" pairs generated from the template text, subject, and the data dataframe.'''
 
-    data_columns = data_df.columns.values.tolist()  # Determine list of columns from dataframe.
+    data_columns = data_df.columns.values.tolist()
     recipient_actions(window, data_columns)
-    subject_all = subject_actions(data_columns, values, window)  # Determine what subject to use and, if one subject for all, determine if it has placeholders and return them.
+    subject_all = subject_actions(data_columns, values, window)
     attachment_actions(data_columns, window)
     placeholder_regex = re.compile(REG)
-    temporary_placeholders = placeholder_regex.findall(subject_all) + placeholder_regex.findall(template_text)  # Combine the lists of placeholders from subject and from template.
-    placeholders = unique_values_list(temporary_placeholders)  # Only keep unique placeholder values.
+    temporary_placeholders = placeholder_regex.findall(subject_all) + placeholder_regex.findall(template_text)
+    placeholders = unique_values_list(temporary_placeholders)
     if placeholders:  # Extend the layout of the scrollable column with the "Placeholder - Data" pairs.
         for placeholder in placeholders:
             window.extend_layout(window.Element('-PAIR_COLUMN-'), new_layout(placeholder, data_columns))

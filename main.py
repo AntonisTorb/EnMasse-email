@@ -99,6 +99,8 @@ def main():
 
                         placeholders = msg_config.get_placeholders(placeholders, window, data_df, template_text, values)
                         window.Element("-GENERATE_PAIRS-").update(disabled= True)  # If generate pairs button is pressed again, the resulting pairs have broken element keys for some reason, need to test more. If there is a need to correct something, reset.
+                        window.Element("-BROWSE_TEMPLATE-").update(disabled= True)
+                        window.Element("-BROWSE_DATA-").update(disabled= True)
                     except Exception as e:
                         user_messages.multiline_error_handler(["Unable to load file(s):", f"{type(e).__name__}: {str(e)}"])
                     #window['-PAIR_COLUMN-'].contents_changed()  # Appears to not have any effect on the scrollable column, calling after event handling.

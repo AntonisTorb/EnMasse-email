@@ -65,7 +65,7 @@ def get_email_config_send_layout() -> list[list[sg.Element]]:
 
 
 def set_server_port(service: str, window: sg.Window) -> None:
-    '''Sets the default server and port settings for the selected e-mail service'''
+    '''Sets the default server and port settings for the selected e-mail service.'''
 
     window.Element("-SERVER-").update(DEFAULT_EMAIL_SETTINGS[service]["Server"])
     window.Element("-PORT-").update(DEFAULT_EMAIL_SETTINGS[service]["Port"])
@@ -158,8 +158,10 @@ def create_email(alias: str | None, sender_email_address: str, recipient_email_a
     if bcc_email_address is not None:
         message["BCC"] = bcc_email_address
     message["Subject"] = subject
-    message.set_content(email_body)
-    message.add_alternative(email_body, subtype= "html")
+    
+    message.set_content(email_body, subtype= "plain" )
+    if email_body.startswith("<html>"):
+        message.add_alternative(email_body, subtype= "html")
     
     if attachments_paths:
         for file in attachments_paths:
@@ -189,7 +191,7 @@ def setup_and_send_event(data_df: pd.DataFrame, placeholders: list[str], templat
             alias = None
         
         count_sent = 0
-        print("Establishing connection...")        
+        print("Establishing connection...")
         try:
             with smtplib.SMTP(server, port) as server:
                 server.starttls()
