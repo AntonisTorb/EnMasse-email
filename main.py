@@ -31,7 +31,7 @@ def get_main_layout() -> list[list[sg.Element]]:
 
     message_configuration_layout = msg_config.get_msg_config_layout()
     attachment_configuration_layout = attachment_config.get_attachment_config_layout()
-    preview_layout = preview.get_preview_layout((30, 10), "-PREVIEW-")
+    preview_layout = preview.get_preview_layout("-PREVIEW-", (30, 10))
     email_config_send_layout = email_config_send.get_email_config_send_layout()
 
     layout = [
@@ -68,7 +68,7 @@ def main():
     preview_live= False
     preview_element = None
 
-    msg_config.expand_scrollable_column(window, "-PAIR_COLUMN-")
+    msg_config.expand_scrollable_column("-PAIR_COLUMN-", window)
 
     while True:
         event, values = window.read()
@@ -96,8 +96,8 @@ def main():
                         data_df = msg_config.load_data(values)
                         total_emails_to_send = len(data_df.index)
                         template_text = msg_config.load_template(values)
+                        placeholders = msg_config.get_placeholders(data_df, placeholders, template_text, values, window)
 
-                        placeholders = msg_config.get_placeholders(placeholders, window, data_df, template_text, values)
                         window.Element("-GENERATE_PAIRS-").update(disabled= True)  # If generate pairs button is pressed again, the resulting pairs have broken element keys for some reason, need to test more. If there is a need to correct something, reset.
                         window.Element("-BROWSE_TEMPLATE-").update(disabled= True)
                         window.Element("-BROWSE_DATA-").update(disabled= True)
@@ -119,10 +119,10 @@ def main():
                     elif not values["-ATTACHMENT_FILENAMES_COLUMN-"]:
                         user_messages.one_line_error_handler("Please select a data column.")
                     else:
-                        data_attachments_filenames = attachment_config.get_data_attachments_filenames(values, total_emails_to_send, data_df)
-                        directory_attachments_filenames = attachment_config.get_directory_attachments_filenames(values)
-                        attachments_valid = attachment_config.attachment_validation(data_attachments_filenames, directory_attachments_filenames)
-                        attachment_config.attachment_preview(window, data_attachments_filenames, directory_attachments_filenames)
+                        data_attachments_filenames = attachment_config.get_data_attachments_filenames(data_df, total_emails_to_send, values)
+                        directory_filenames = attachment_config.get_directory_attachments_filenames(values)
+                        attachments_valid = attachment_config.attachment_validation(data_attachments_filenames, directory_filenames)
+                        attachment_config.attachment_preview(data_attachments_filenames, directory_filenames, window)
 
             # Preview events
             case "-SHOW_PREVIEW-":
@@ -143,20 +143,20 @@ def main():
                     user_messages.one_line_error_handler("Please specify the column containing the recipient e-mail address(es).")
                 else:
                     try:
-                        preview_index, preview_live, preview_element = preview.show_preview_event(placeholders, data_df, values, template_text, window)
+                        preview_index, preview_element, preview_live = preview.show_preview_event(data_df, placeholders, template_text, values, window)
                         window.Element("-ROW_TO_JUMP-").update(2, values= [row for row in range(2, total_emails_to_send + 2)])
                     except Exception as e:  # Error while processing the html.
                         preview_live = False
                         user_messages.multiline_error_handler(["Unable to show preview due to error:", f"{type(e).__name__}: {str(e)}"])
             case "-NEXT-" | "Right:39":
                 if (preview_index < total_emails_to_send - 1) and preview_live:
-                    preview_index = preview.next_preview_event(preview_index, placeholders, values, data_df, template_text, preview_element, window)
+                    preview_index = preview.next_preview_event(data_df, placeholders, preview_element, preview_index, template_text, values, window)
             case "-PREVIOUS-" | "Left:37":
                 if preview_index > 0 and preview_live:
-                    preview_index = preview.previous_preview_event(preview_index, placeholders, values, data_df, template_text, preview_element, window)       
+                    preview_index = preview.previous_preview_event(data_df, placeholders, preview_element, preview_index, template_text, values, window)       
             case "-JUMP_ROW-":
                 if preview_live:
-                    preview_index = preview.jump_to_row_event(values, placeholders, data_df, template_text, preview_element, window)
+                    preview_index = preview.jump_to_row_event(data_df, placeholders, preview_element, template_text, values, window)
             
             # E-mail configuration and send events
             case "-EMAIL_SERVICE-":
@@ -167,7 +167,6 @@ def main():
                 if len(port) > 3:
                     window.Element("-PORT-").update(port[:3]) 
             case "Setup and Send":
-                #print(window.size)  # Testing.
                 missing_pairs = False
                 for placeholder in placeholders:
                     if not values[("-DATA-", placeholder)]:
@@ -200,7 +199,9 @@ def main():
                 elif values["-SET_ALIAS-"] and not values["-ALIAS-"]:
                     user_messages.one_line_error_handler("Please specify your alias.")
                 else:
+                    window.Element("Setup and Send").update(disabled = True)
                     email_config_send.setup_and_send_event(data_df, placeholders, template_text, total_emails_to_send, values, window)
+                    window.Element("Setup and Send").update(disabled = False)
         window.Element('-PAIR_COLUMN-').contents_changed()  # Inefficient to call after every event, but does not work in "msg_config.generate_pairs_event" function or after calling it in event handling.
     window.close()
 

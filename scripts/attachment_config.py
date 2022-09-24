@@ -52,7 +52,7 @@ def browse_attachment_directory_event(window: sg.Window) -> None:
         window.Element("-ATTACHMENTS_DIRECTORY-").update(attachments_directory) 
 
 
-def attachment_preview(window: sg.Window, attachment_file_names: list[str], directory_filenames:list[str]) -> None:
+def attachment_preview(attachment_file_names: list[str], directory_filenames:list[str], window: sg.Window) -> None:
     '''Displays both the data attachment filename(s) and the directory attachment filename(s) in the multiline element.'''
     
     window.Element("-ATTACHMENT_FILENAMES_IN_DATA-").update("")
@@ -64,7 +64,7 @@ def attachment_preview(window: sg.Window, attachment_file_names: list[str], dire
         window.Element("-ATTACHMENT_FILENAMES_IN_DIRECTORY-").update(f"{filename}\n", append= True)
 
 
-def get_data_attachments_filenames(values: dict, total_emails_to_send: int, data_df: pd.DataFrame) -> list[str]:
+def get_data_attachments_filenames(data_df: pd.DataFrame, total_emails_to_send: int, values: dict)  -> list[str]:
     '''Returns the filenames of the attachment file(s) from the data.'''
     
     attachments = []

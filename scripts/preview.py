@@ -5,7 +5,7 @@ import PySimpleGUI as sg  # pip install PySimpleGUI
 from tkhtmlview import html_parser  # pip install tkhtmlview
 
 
-def get_preview_layout(size: tuple[int], key: str) -> list[list[sg.Element]]:
+def get_preview_layout(key: str, size: tuple[int]) -> list[list[sg.Element]]:
     '''Returns the layout to use for the preview tab.'''
 
     preview_warning_layout = [
@@ -44,7 +44,7 @@ def get_preview_layout(size: tuple[int], key: str) -> list[list[sg.Element]]:
     return preview_layout
 
 
-def set_html(widget: tk.Widget, html: str, strip: bool = True) -> None:
+def set_html(html: str, widget: tk.Widget, strip: bool = True) -> None:
     '''Clears a tkinder widget of its contents and adds new contents.'''
 
     parser = html_parser.HTMLTextParser()
@@ -56,11 +56,11 @@ def set_html(widget: tk.Widget, html: str, strip: bool = True) -> None:
     widget.config(state= prev_state)
 
 
-def initialize(win: sg.Window, element: sg.Element, html: str) -> tk.Widget:
+def initialize(element: sg.Element, html: str, win: sg.Window) -> tk.Widget:
     '''Initializes the preview Element.'''
 
     preview_widget = win.Element(element).Widget
-    set_html(preview_widget, html)
+    set_html(html, preview_widget)
     return preview_widget
 
 
@@ -77,49 +77,51 @@ def update_preview_elements(data_df: pd.DataFrame, placeholders: list[str], prev
         window.Element("-BCC_ADDRESS_PREVIEW-").update(common_operations.get_email_address(values["-BCC_EMAIL_ADDRESS-"], data_df, preview_index))
     else:
         window.Element("-BCC_ADDRESS_PREVIEW-").update("")
-    window.Element("-SUBJECT_PREVIEW-").update(common_operations.get_subject(values, placeholders, data_df, preview_index))
-    window.Element("-ATTACHMENT_PREVIEW-").update(common_operations.get_attachment_filenames(values, data_df, preview_index))   
+    window.Element("-SUBJECT_PREVIEW-").update(common_operations.get_subject(data_df, preview_index, placeholders, values))
+    window.Element("-ATTACHMENT_PREVIEW-").update(common_operations.get_attachment_filenames(data_df, preview_index, values))   
 
 
-def show_preview_event(placeholders: list[str], data_df: pd.DataFrame, values: dict, template_text: str, window: sg.Window) -> tuple[int, bool, tk.Widget]:
-    '''When the "Show Preview" button is pressed, shows the preview of the first e-mail after replacement of placeholders.'''
+def show_preview_event(data_df: pd.DataFrame, placeholders: list[str], template_text: str, values: dict, window: sg.Window) -> tuple[int, bool, tk.Widget]:
+    '''When the "Show Preview" button is pressed, shows the preview of the first e-mail after replacement of placeholders.
+    Returns the preview index, element, and a boolean value confirming that the preview is live.
+    '''
 
     preview_index = 0
     if placeholders:
-        preview_text = common_operations.replace_placeholders(placeholders, values, data_df, preview_index, template_text) 
+        preview_text = common_operations.replace_placeholders(data_df, preview_index, placeholders, template_text, values) 
     else:
         preview_text = template_text
-    preview_element = initialize(window, "-PREVIEW-", preview_text)
+    preview_element = initialize("-PREVIEW-", preview_text, window)
     preview_live = True
     update_preview_elements(data_df, placeholders, preview_index, values, window)
-    return preview_index, preview_live, preview_element
+    return preview_index, preview_element, preview_live
 
 
-def next_preview_event(preview_index: int, placeholders: list[str], values: dict, data_df: pd.DataFrame, template_text: str, preview_element: tk.Widget, window: sg.Window) -> int:
-    '''Shows the next e-mail preview according to the next dataframe element.'''
+def next_preview_event(data_df: pd.DataFrame, placeholders: list[str], preview_element: tk.Widget, preview_index: int, template_text: str, values: dict, window: sg.Window) -> int:
+    '''Shows the next e-mail preview according to the next dataframe element. Returns the preview index.'''
     
     preview_index += 1
-    preview_text = common_operations.replace_placeholders(placeholders, values, data_df, preview_index, template_text)
-    set_html(preview_element, preview_text)
+    preview_text = common_operations.replace_placeholders(data_df, preview_index, placeholders, template_text, values) 
+    set_html(preview_text, preview_element)
     update_preview_elements(data_df, placeholders, preview_index, values, window)
     return preview_index
 
 
-def previous_preview_event(preview_index: int, placeholders: list[str], values: dict, data_df: pd.DataFrame, template_text: str, preview_element: tk.Widget, window: sg.Window) -> int:
-    '''Shows the previous e-mail preview according to the previous dataframe element.'''
+def previous_preview_event(data_df: pd.DataFrame, placeholders: list[str], preview_element: tk.Widget, preview_index: int, template_text: str, values: dict, window: sg.Window) -> int:
+    '''Shows the previous e-mail preview according to the previous dataframe element. Returns the preview index.'''
     
     preview_index -= 1
-    preview_text = common_operations.replace_placeholders(placeholders, values, data_df, preview_index, template_text)
-    set_html(preview_element, preview_text)
+    preview_text = common_operations.replace_placeholders(data_df, preview_index, placeholders, template_text, values) 
+    set_html(preview_text, preview_element)
     update_preview_elements(data_df, placeholders, preview_index, values, window)
     return preview_index
     
 
-def jump_to_row_event(values: dict, placeholders: list[str], data_df: pd.DataFrame, template_text: str, preview_element: tk.Widget, window: sg.Window) -> int:
-    '''Shows the selected e-mail preview according to the selected dataframe element.'''
+def jump_to_row_event(data_df: pd.DataFrame, placeholders: list[str], preview_element: tk.Widget, template_text: str, values: dict, window: sg.Window) -> int:
+    '''Shows the selected e-mail preview according to the selected dataframe element. Returns the preview index.'''
     
     preview_index = values["-ROW_TO_JUMP-"] - 2
-    preview_text = common_operations.replace_placeholders(placeholders, values, data_df, preview_index, template_text)
-    set_html(preview_element, preview_text)
+    preview_text = common_operations.replace_placeholders(data_df, preview_index, placeholders, template_text, values) 
+    set_html(preview_text, preview_element)
     update_preview_elements(data_df, placeholders, preview_index, values, window)
     return preview_index

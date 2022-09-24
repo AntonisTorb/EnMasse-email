@@ -10,7 +10,7 @@ def get_email_address(column, data_df, index):
     return recipient_email_address
 
 
-def replace_placeholders(placeholders: list[str], values: dict, data_df: pd.DataFrame, index: int, template_text: str) -> str:
+def replace_placeholders(data_df: pd.DataFrame, index: int, placeholders: list[str], template_text: str, values: dict) -> str:
     '''Returns the formatted text after replacing the placeholders with the dataframe data.'''
 
     dict = {}
@@ -21,14 +21,14 @@ def replace_placeholders(placeholders: list[str], values: dict, data_df: pd.Data
     return template_text.format(**dict)
 
 
-def get_subject(values: dict, placeholders: list[str], data_df: pd.DataFrame, index: int) -> None:
+def get_subject(data_df: pd.DataFrame, index: int, placeholders: list[str], values: dict ) -> None:
     '''Returns the subject according to user input.'''
 
     subject = ""
     if values["-SUBJECT_ALL-"]:
         subject = values["-SUBJECT-"]
         if values["-PAIR_SUBJECT-"]:
-            subject = replace_placeholders(placeholders, values, data_df, index, subject)
+            subject = replace_placeholders(data_df, index, placeholders, subject, values)
     elif values["-SUBJECT_FROM_DATA-"] and values["-SUBJECT_COLUMN-"]:
         column_name = values["-SUBJECT_COLUMN-"]
         df_column = data_df[column_name]
@@ -41,14 +41,14 @@ def get_attachment_paths(data_df: pd.DataFrame, index: int, values: dict) -> lis
 
     attachment_paths = []
     if values["-SAME_ATTACHMENTS-"]:
-        attachments_path = values["-SAME_ATTACHMENT_FILES-"]
+        attachments = values["-SAME_ATTACHMENT_FILES-"]
         
-        if ";" in attachments_path:  # Splitting on ";" if there are multiple attachment files.
-            separate_paths = attachments_path.split(";")
+        if ";" in attachments:  # Splitting on ";" if there are multiple attachment files.
+            separate_paths = attachments.split(";")
             for path in separate_paths:
                 attachment_paths.append(Path(path))
         else:
-            attachment_paths.append(Path(attachments_path))
+            attachment_paths.append(Path(attachments))
     elif values["-SEPARATE_ATTACHMENTS-"]:
         directory_path = Path(values["-ATTACHMENTS_DIRECTORY-"])
         column_name = values["-ATTACHMENT_FILENAMES_COLUMN-"]
@@ -64,7 +64,7 @@ def get_attachment_paths(data_df: pd.DataFrame, index: int, values: dict) -> lis
     return attachment_paths
 
 
-def get_attachment_filenames(values: dict, data_df:pd.DataFrame, index: int) -> list[str]:
+def get_attachment_filenames(data_df:pd.DataFrame, index: int, values: dict) -> list[str]:
     '''Returns the attachment filename(s) according to user input.'''
     
     filenames = ""

@@ -22,7 +22,7 @@ def get_msg_config_layout() ->list[list[sg.Element]]:
     subject_layout = [
         [sg.Radio("Enter one subject for all messages:", group_id= "get_subject", default= True, key= "-SUBJECT_ALL-"), 
             sg.Input(expand_x= True, key= "-SUBJECT-")],
-        [sg.Checkbox("Include the subject in Placeholder - Data pair generation.", tooltip = "Check this if the subject contains a placeholer.", pad= ((50, 0) , (0, 0)), key= "-PAIR_SUBJECT-")],
+        [sg.Checkbox("Include the subject in Placeholder - Data pair generation.", tooltip = "Check this if the subject contains a placeholder.", pad= ((50, 0) , (0, 0)), key= "-PAIR_SUBJECT-")],
         [sg.Radio("Get subject from Data column:", group_id= "get_subject", key= "-SUBJECT_FROM_DATA-"), sg.Push(), 
             sg.Combo([], size= (25, 1),  readonly= True, disabled= True, key= "-SUBJECT_COLUMN-")]
     ]
@@ -53,7 +53,7 @@ def delete_widget(widget: tk.Widget) -> None:
     del widget
 
 
-def new_layout(placeholder_name: str, data_name: list[str]) -> list[list[sg.Element]]:
+def new_layout(data_name: list[str], placeholder_name: str) -> list[list[sg.Element]]:
     '''Returns a new row to be inserted into a PySimpleGUI Column Element.'''
 
     return [
@@ -66,18 +66,18 @@ def new_layout(placeholder_name: str, data_name: list[str]) -> list[list[sg.Elem
     ]
 
 
-def configure(event: tk.Event, canvas: tk.Canvas, frame_id: int) -> None:
+def configure(canvas: tk.Canvas, event: tk.Event, frame_id: int) -> None:
     '''Performs the expansion of elements in a scrollable column upon window resize.'''
 
     canvas.itemconfig(frame_id, width= canvas.winfo_width()) 
 
 
-def expand_scrollable_column(window: sg.Window, column_key: str) -> None:
+def expand_scrollable_column(column_key: str, window: sg.Window, ) -> None:
     '''Allow for elements in scrollable column to expand on window resize.'''
 
     frame_id = window.Element(column_key).Widget.frame_id
     canvas = window.Element(column_key).Widget.canvas
-    canvas.bind("<Configure>", lambda event, canvas= canvas, frame_id= frame_id: configure(event, canvas, frame_id))
+    canvas.bind("<Configure>", lambda event, canvas= canvas, frame_id= frame_id: configure(canvas, event, frame_id))
 
 
 def browse_template_event(window: sg.Window) -> None:
@@ -117,28 +117,43 @@ def find_problems_in_data(data_df: pd.DataFrame) -> None:
     problem_columns = []
     problem_columns_rows = []
     data_columns = data_df.columns.values.tolist()
-    
-    for data_column in data_columns:  # Problem value in column title.
+
+    for index, data_column in enumerate(data_columns):  # Problem value in column title.
         if pd.isnull(data_column):
-            problem_columns.append(str(data_column))
+            problem_columns.append(str(index + 1))
     
     for column in data_columns:  # Problem value in data rows.
         column_values_to_list = data_df[column].tolist()
-        for value in column_values_to_list:
+        for index, value in enumerate(column_values_to_list):
             if pd.isnull(value):
-                row = column_values_to_list.index(value)
-                problem_columns_rows.append(f"({column}, {row + 2})")
-    
+                row = index + 2
+                problem_columns_rows.append(f"({column}, {row})")
+
     if problem_columns or problem_columns_rows:
-        if len(problem_columns) == 1:
+        if not problem_columns:
+            col_str = "None"
+        elif len(problem_columns) == 1:
             col_str = str(problem_columns[0])
         else:
-            col_str = ", ".join(str(problem_columns))
-        if len(problem_columns_rows) == 1:
+            col_str = ", ".join(problem_columns)
+        
+        if not problem_columns_rows:
+            col_row_str = "None"
+        elif len(problem_columns_rows) == 1:
             col_row_str = str(problem_columns_rows[0])
+        elif len(problem_columns_rows) > 10:
+            col_row_str = ""
+            for index, problem in enumerate(problem_columns_rows):
+                if not col_row_str:
+                    col_row_str = problem
+                elif (index) % 10:  # Line break every 10 problematic pairs, otherwise comma and space.
+                    col_row_str = f"{col_row_str}, {problem}"
+                else:
+                    col_row_str = f"{col_row_str},\n{problem}"
         else:
             col_row_str = ", ".join(problem_columns_rows)
-        user_messages.multiline_warning_handler(["Problems found!", f"Column title(s): {col_str}", f"Value(s) at (column, row): {col_row_str}", "You might reset the app if you wish to correct them."])
+        
+        user_messages.multiline_warning_handler(["Problems found!", f"Column index: {col_str}", f"Value(s) at (column, row): \n{col_row_str}", "You might need to reset the app if you wish to correct them."])
 
 
 def load_data(values: dict) -> pd.DataFrame:
@@ -169,12 +184,13 @@ def unique_values_list(given_list: list) -> list:
     return returned_list
 
 
-def recipient_actions(window: sg.Window, data_columns: list[str]) -> None:
+def recipient_actions(data_columns: list[str], window: sg.Window) -> None:
     """Enables and sets values on the Recipient, CC and BCC elements based on the data column names."""
 
     window.Element("-RECIPIENT_EMAIL_ADDRESS-").update(disabled= False, values= data_columns)
     window.Element("-CC_EMAIL_ADDRESS-").update(disabled= False, values= data_columns)
     window.Element("-BCC_EMAIL_ADDRESS-").update(disabled= False, values= data_columns)
+
     if "recipient" in map(str.lower, data_columns):
         index = list(map(str.lower, data_columns)).index("recipient")
         window.Element("-RECIPIENT_EMAIL_ADDRESS-").update(data_columns[index])
@@ -195,6 +211,7 @@ def subject_actions(data_columns: list[str], values: dict, window: sg.Window) ->
 
     window.Element("-SUBJECT_COLUMN-").update(disabled= False, values= data_columns)
     subject_all = ""
+    
     if "subject" in map(str.lower, data_columns) and not values["-PAIR_SUBJECT-"]:
         index = list(map(str.lower, data_columns)).index("subject")
         window.Element("-SUBJECT_ALL-").update(False)
@@ -222,11 +239,11 @@ def attachment_actions(data_columns: list[str], window: sg.Window) -> None:
         window.Element("-ATTACHMENT_FILENAMES_COLUMN-").update(data_columns[index])
 
     
-def get_placeholders(placeholders: list[str], window: sg.Window, data_df: pd.DataFrame, template_text: str, values: dict) -> list[str]:
+def get_placeholders(data_df: pd.DataFrame, placeholders: list[str], template_text: str, values: dict, window: sg.Window) -> list[str]:
     '''Populates the scrollable column element with "Placeholder - Data" pairs generated from the template text, subject, and the data dataframe.'''
 
     data_columns = data_df.columns.values.tolist()
-    recipient_actions(window, data_columns)
+    recipient_actions(data_columns, window)
     subject_all = subject_actions(data_columns, values, window)
     attachment_actions(data_columns, window)
     placeholder_regex = re.compile(REG)
@@ -234,7 +251,7 @@ def get_placeholders(placeholders: list[str], window: sg.Window, data_df: pd.Dat
     placeholders = unique_values_list(temporary_placeholders)
     if placeholders:  # Extend the layout of the scrollable column with the "Placeholder - Data" pairs.
         for placeholder in placeholders:
-            window.extend_layout(window.Element('-PAIR_COLUMN-'), new_layout(placeholder, data_columns))
+            window.extend_layout(window.Element('-PAIR_COLUMN-'), new_layout(data_columns, placeholder))
             if placeholder in data_columns:
                 window.Element(("-DATA-", placeholder)).update(placeholder)
         #window['-PAIR_COLUMN-'].contents_changed()  # Appears to not have any effect on the scrollable column, calling after event handling instead.

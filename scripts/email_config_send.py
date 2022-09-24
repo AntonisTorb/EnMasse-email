@@ -120,7 +120,7 @@ def set_credentials() -> tuple[str, str] | tuple[None, None]:
                     user_messages.one_line_error_handler("Please enter both e-mail address and password")
 
 
-def get_email_components(data_df: pd.DataFrame, placeholders: list[str], mail_index: int, template_text: str, values: dict) -> tuple[str, str | None, str | None, str, list[Path], str]:
+def get_email_components(data_df: pd.DataFrame, mail_index: int, placeholders: list[str], template_text: str, values: dict) -> tuple[str, str | None, str | None, str, list[Path], str]:
     '''Returns the recipient e-mail address, CC e-mail address (or None), BCC e-mail address (or None), the e-mail subject,
     the attachment paths in a list, and the e-mail body text, in order to create the e-mail message.
     '''
@@ -135,19 +135,19 @@ def get_email_components(data_df: pd.DataFrame, placeholders: list[str], mail_in
         bcc_email_address = common_operations.get_email_address(values["-BCC_EMAIL_ADDRESS-"], data_df, mail_index)
     else:
         bcc_email_address = None
-    subject = common_operations.get_subject(values, placeholders, data_df, mail_index)
+    subject = common_operations.get_subject(data_df, mail_index, placeholders, values)
     if not values["-NO_ATTACHMENTS-"]:
         attachments_paths = common_operations.get_attachment_paths(data_df, mail_index, values)
     else:
         attachments_paths = []
     if placeholders:
-        email_body = common_operations.replace_placeholders(placeholders, values, data_df, mail_index, template_text)
+        email_body = common_operations.replace_placeholders(data_df, mail_index, placeholders, template_text, values)
     else:
         email_body = template_text
     return recipient_email_address, cc_email_address, bcc_email_address, subject, attachments_paths, email_body
 
 
-def create_email(alias: str | None, sender_email_address: str, recipient_email_address: str, cc_email_address: str | None, bcc_email_address: str | None, subject: str, attachments_paths: list[Path], email_body: str) -> EmailMessage:
+def create_email(alias: str | None, attachments_paths: list[Path], bcc_email_address: str | None, cc_email_address: str | None, email_body: str, recipient_email_address: str, sender_email_address: str, subject: str) -> EmailMessage:
     '''Create an email object according to the user settings and send it via the provided server connection.'''
 
     message = EmailMessage()
@@ -196,13 +196,12 @@ def setup_and_send_event(data_df: pd.DataFrame, placeholders: list[str], templat
             with smtplib.SMTP(server, port) as server:
                 server.starttls()
                 server.login(sender_email_address, password)
-                window.Element("Setup and Send").update(disabled = True)
                 
                 for mail_index in range(total_emails_to_send):
                     try:
-                        recipient_email_address, cc_email_address, bcc_email_address, subject, attachments_paths, email_body = get_email_components(data_df, placeholders, mail_index, template_text, values)
+                        recipient_email_address, cc_email_address, bcc_email_address, subject, attachments_paths, email_body = get_email_components(data_df, mail_index, placeholders, template_text, values)
                         print(f"Sending e-mail {mail_index + 1} ...")
-                        message = create_email(alias, sender_email_address, recipient_email_address, cc_email_address, bcc_email_address, subject, attachments_paths, email_body)
+                        message = create_email(alias, attachments_paths, bcc_email_address, cc_email_address, email_body, recipient_email_address, sender_email_address, subject)
                         server.send_message(message) 
                         print(f"Successfully sent e-mail {mail_index + 1}.")
                         count_sent += 1
@@ -211,7 +210,6 @@ def setup_and_send_event(data_df: pd.DataFrame, placeholders: list[str], templat
                         print(f"Error while sending email {mail_index + 1}: {type(e).__name__}, {str(e)}")
                         window.Element('-PROGRESS-').update(bar_color = "red on white")
                 print(f"Finished sending {count_sent} e-mails.")
-                window.Element("Setup and Send").update(disabled = False)
         except Exception as e:
             print(f"Error with server connection: {type(e).__name__}, {str(e)}")
         
