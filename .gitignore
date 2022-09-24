@@ -1,0 +1,13 @@
+*.exe
+/env
+/templates
+*.xls*
+*.csv*
+__pycache__
+*.html*
+/attachments
+/documentation
+/examples
+*.txt
+!requirements.txt
+/releases
