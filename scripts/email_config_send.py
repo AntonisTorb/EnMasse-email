@@ -32,6 +32,13 @@ def get_email_config_send_layout() -> list[list[sg.Element]]:
         [sg.Checkbox("Set alias for sender:", tooltip= "This will appear as the sender instead of your e-mail address", key= "-SET_ALIAS-"),
             sg.Input(expand_x= True, key= "-ALIAS-")]
     ]
+    delay_list = [sec for sec in range(1, 6)] + [sec for sec in range (10, 31, 5)]+ [60, 120]
+    timing_layout = [
+        [sg.Radio("Send all e-mails with no delay.", group_id= "set_delay", default= True, key= "-NO_DELAY-")],
+        [sg.Radio("Send all e-mails with ", group_id= "set_delay", key= "-YES_DELAY-"),
+            sg.Combo(delay_list, default_value= 1, readonly= True, key= "-DELAY-"),
+            sg.Text("second(s) delay.")]
+    ]
     send_layout = [
         [sg.Push(), sg.Text("Click to set sender credentials and send the e-mails."), sg.Push()],
         [sg.Push(), sg.Button("Setup and Send"), sg.Push()]
@@ -57,7 +64,7 @@ def get_email_config_send_layout() -> list[list[sg.Element]]:
         [sg.Frame("E-mail settings", email_settings_layout, expand_x= True)],
         [sg.Frame("Recipients", recipients_layout, expand_x= True)],
         [sg.Frame("Alias", alias_layout, expand_x= True)],
-        [sg.Frame("Send", send_layout, expand_x= True)],
+        [sg.Frame("Timing", timing_layout, expand_x= True), sg.Frame("Send", send_layout, expand_x= True)],
         [sg.Frame("Log", log_layout, expand_x= True, expand_y= True)]
     ]
 
@@ -174,6 +181,14 @@ def create_email(alias: str | None, attachments_paths: list[Path], bcc_email_add
     return message
 
 
+def delay_send(delay: int, mail_index: int, message: EmailMessage, server: smtplib.SMTP) -> None:
+    '''Sends the e-mail and prints the appropriate message to the log when sendling with ddelay.'''
+
+    server.send_message(message)
+    print(f"Successfully sent e-mail {mail_index + 1}.")
+    print(f"Waiting {delay} seconds...")
+
+
 def setup_and_send_event(data_df: pd.DataFrame, placeholders: list[str], template_text: str, total_emails_to_send: int, values: dict, window: sg.Window) -> None:
     '''Set the e-mail account credentials, create the e-mails according to the user settings and send them via the created server connection.'''
 
@@ -189,6 +204,13 @@ def setup_and_send_event(data_df: pd.DataFrame, placeholders: list[str], templat
             alias = values["-ALIAS-"]
         else:
             alias = None
+            
+        if values["-YES_DELAY-"]:
+            delay_s = int(values["-DELAY-"])
+            delay_ms = delay_s * 1000
+            root = window.TKroot
+        else:
+            delay_ms = None
         
         count_sent = 0
         print("Establishing connection...")
@@ -202,8 +224,16 @@ def setup_and_send_event(data_df: pd.DataFrame, placeholders: list[str], templat
                         recipient_email_address, cc_email_address, bcc_email_address, subject, attachments_paths, email_body = get_email_components(data_df, mail_index, placeholders, template_text, values)
                         print(f"Sending e-mail {mail_index + 1} ...")
                         message = create_email(alias, attachments_paths, bcc_email_address, cc_email_address, email_body, recipient_email_address, sender_email_address, subject)
-                        server.send_message(message) 
-                        print(f"Successfully sent e-mail {mail_index + 1}.")
+                        
+                        if delay_ms is None:
+                            server.send_message(message)
+                            print(f"Successfully sent e-mail {mail_index + 1}.")
+                        else:
+                            if mail_index == total_emails_to_send - 1:  # Last message, no need to delay.
+                                server.send_message(message)
+                                print(f"Successfully sent e-mail {mail_index + 1}.")
+                            else:
+                                root.after(delay_ms, delay_send(delay_s, mail_index, message, server))
                         count_sent += 1
                         window.Element('-PROGRESS-').update(current_count = count_sent, max = total_emails_to_send)
                     except Exception as e:
